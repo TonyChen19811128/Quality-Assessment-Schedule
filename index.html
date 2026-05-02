@@ -89,7 +89,7 @@
     .calendar-weekdays { display: grid; grid-template-columns: repeat(7, minmax(100px, 1fr)); background: #f9fafb; border-bottom: 1px solid var(--border); min-width: 700px; }
     .calendar-weekday { padding: 12px; text-align: center; font-weight: 600; font-size: 14px; color: var(--muted); }
     .calendar-days { display: grid; grid-template-columns: repeat(7, minmax(100px, 1fr)); min-width: 700px; }
-    .calendar-day { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 8px; min-height: 110px; vertical-align: top; background: white; transition: background 0.2s; display: flex; flex-direction: column; }
+    .calendar-day { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 8px; min-height: 80px; vertical-align: top; background: white; transition: background 0.2s; display: flex; flex-direction: column; }
     .calendar-day:hover { background: #f9fafb; }
     .calendar-day.other-month { background: #f9fafb; color: var(--muted); }
     .calendar-day.today { background: #eff6ff; }
@@ -128,7 +128,7 @@
     .factory-timeline-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f9fafb; border-bottom: 1px solid var(--border); }
     .factory-timeline-title { font-weight: 700; font-size: 14px; }
     .factory-timeline-body { max-height: 360px; overflow-y: auto; overflow-x: hidden; }
-    .timeline-row { display: flex; align-items: center; padding: 6px 14px; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.15s; min-height: 36px; }
+    .timeline-row { display: flex; align-items: center; padding: 6px 14px; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.15s; min-height: 40px; }
     .timeline-row:hover { background: #f8fafc; }
     .timeline-row.highlight { background: #eff6ff !important; }
     .timeline-factory-info { width: 200px; flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
@@ -151,7 +151,8 @@
     .calendar-day.highlight-avail { background: #fef3c7 !important; border: 2px solid #f59e0b !important; }
     
     /* 周末/节假日样式 */
-    .calendar-day.weekend { background: #fafafa; }
+    .calendar-day.weekend { background: #fef2f2; }
+    .calendar-day.weekend .calendar-day-number { color: #dc2626; }
     .calendar-day.holiday { background: #fef2f2; }
     .holiday-badge { display: inline-block; font-size: 9px; background: #fecaca; color: #991b1b; padding: 1px 4px; border-radius: 3px; margin-left: 4px; }
     
@@ -234,26 +235,62 @@
     .dropdown-menu.show { display: block; }
     .dropdown-item { display: block; padding: 8px 12px; color: #111827; text-decoration: none; white-space: nowrap; cursor: pointer; }
     .dropdown-item:hover { background: #f3f4f6; }
+    
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .syncing-icon { display: inline-block; animation: spin 1s linear infinite; }
+    
+    @keyframes pulse-light { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .report-light { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-left: 4px; vertical-align: middle; }
+    .report-light.overdue { background: #dc2626; animation: pulse-light 1.5s ease-in-out infinite; }
+    .report-light.critical { background: #92400e; animation: pulse-light 2s ease-in-out infinite; }
+    .report-light.warning { background: #f59e0b; }
+    .report-light.ok { background: #22c55e; }
+    
+    .timeline-row.selected { background: #eff6ff !important; border-left: 3px solid #2563eb; }
+    
+    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .filter-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; font-size: 11px; color: #1d4ed8; }
+    .filter-chip .chip-close { cursor: pointer; font-size: 14px; line-height: 1; color: #6b7280; }
+    .filter-chip .chip-close:hover { color: #dc2626; }
+    
+    .virtual-scroll-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; color: var(--muted); text-align: center; }
+    .virtual-scroll-empty .empty-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.6; }
+    .virtual-scroll-empty .empty-title { font-size: 13px; font-weight: 600; color: #6b7280; }
+    
+    .search-highlight { background: #fde68a; padding: 0 1px; border-radius: 2px; }
+    
+    .virtual-header .virtual-cell.sortable { cursor: pointer; }
+    .virtual-header .virtual-cell.sortable:hover { color: #2563eb; }
+    .virtual-header .virtual-cell .sort-arrow { font-size: 9px; margin-left: 2px; }
+    
+    .risk-card { transition: border-color 0.3s; }
+    .risk-card.has-risk { border-color: #fecaca !important; }
+    .risk-card.no-risk { border-color: #a7f3d0 !important; }
   </style>
 </head>
 <body>
 <header>
   <div class="wrap">
-    <div class="row" style="justify-content:space-between;">
-      <div class="row">
-        <div class="brand">Oi Shanghai QC Team - Quality Assessment 排期看板</div>
-      </div>
+    <div class="row" style="justify-content:space-between;align-items:center;">
+      <div class="brand">Oi Shanghai QC Team - Quality Assessment 排期看板</div>
     </div>
-    <div class="row" style="margin-top:6px; flex-wrap:wrap; gap:6px;">
+    <div class="row" style="margin-top:8px; flex-wrap:wrap; gap:6px; align-items:center;">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">筛选：</span>
       <select id="filterOffice" class="btn"></select>
       <select id="filterAssessor" class="btn"></select>
       <select id="filterStatus" class="btn"><option value="">全部状态</option><option value="空白">空白</option><option value="Planned">Planned</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select>
       <input id="search" class="search-input" placeholder="🔍 搜索 供应商 / 工厂 / FID / Assessor" />
       <button id="btnReset" class="btn">重置</button>
+      <div class="row tabs">
+        <button id="tabList" class="active">列表视图</button>
+        <button id="tabCal">日历视图</button>
+      </div>
+      <div id="filterChips" class="filter-chips"></div>
+    </div>
+    <div class="row" style="margin-top:6px; flex-wrap:wrap; gap:6px; align-items:center;">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">操作：</span>
       <input id="fileImportCsv" type="file" accept=".csv,text/csv" style="display:none" />
       <input id="fileImportJson" type="file" accept=".json,application/json" style="display:none" />
-      
-      <!-- 导入下拉菜单 -->
       <div class="dropdown" style="display:inline-block;position:relative;">
         <button class="btn primary" onclick="window.app.toggleDropdown(this)">📂 导入供应商/工厂 ▼</button>
         <div class="dropdown-menu">
@@ -261,8 +298,6 @@
           <a href="#" class="dropdown-item" onclick="window.app.downloadImportTemplate();return false;">📋 下载导入模板</a>
         </div>
       </div>
-
-      <!-- 导出/导入下拉菜单 -->
       <div class="dropdown" style="display:inline-block;position:relative;">
         <button class="btn" onclick="window.app.toggleDropdown(this)">💾 导出/导入全部数据 ▼</button>
         <div class="dropdown-menu">
@@ -270,18 +305,12 @@
           <a href="#" class="dropdown-item" onclick="document.getElementById('fileImportJson').click();return false;">📥 导入全部数据 (JSON)</a>
         </div>
       </div>
-      
       <button id="btnSelectBackupFolder" class="btn" title="选择文件夹后每5分钟自动备份">📁 选择备份文件夹</button>
-      <button id="btnAddFactory" class="btn primary" style="margin-left:4px;">➕ 添加工厂</button>
-      <span id="backupStatus" class="muted" style="font-size:12px;"></span>
-      <div class="row tabs" style="margin-left:10px;">
-        <button id="tabList" class="active">列表视图</button>
-        <button id="tabCal">日历视图</button>
-      </div>
+      <span id="backupStatus" class="muted" style="font-size:11px;"></span>
+      <div id="syncStatus" style="font-size:11px;margin-left:auto;">🔄 正在连接...</div>
     </div>
     <div class="row" style="margin-top:4px;">
-      <div class="muted" style="font-size:11px;">提示：统计显示在"Pending Assignment 工厂池"标题下方；单CSV新增记录默认状态=空白；JSON用于整库备份/恢复。自动备份功能需使用 Chrome/Edge 浏览器。⌨️ 快捷键：Esc关闭 | Ctrl+S保存 | Ctrl+F搜索 | ←→翻月 | T回今天 | 1/2切换视图 | Ctrl+N添加Assessor | 点击"➕添加工厂"手动录入或"复制"按钮快速复制</div>
-      <div id="syncStatus" style="font-size:11px;margin-left:auto;">🔄 正在连接...</div>
+      <div class="muted" style="font-size:10px;">⌨️ 快捷键：Esc关闭 | Ctrl+S保存 | Ctrl+F搜索 | ←→翻月 | T回今天 | 1/2切换视图 | Ctrl+N添加Assessor</div>
     </div>
     <div id="errorBox"></div>
   </div>
@@ -293,7 +322,7 @@
       <div class="card"><h3 style="display:inline-block;">Assessor 工作量总览（本周 / 下周）</h3><button id="btnAddAssessor" class="btn primary" style="margin-left:10px;vertical-align:middle;">➕ 添加 Assessor</button><div class="muted">Load Status：🟢≤2，🟡=3，🔴≥4（按本周 Planned 计算）</div><div id="assessorTable" class="virtual-scroll-container" style="max-height:280px; overflow-y:auto; overflow-x:hidden;"><div class="virtual-header"><div class="virtual-cell" style="width:120px;">Assessor</div><div class="virtual-cell" style="width:75px;text-align:center;">本周Planned</div><div class="virtual-cell" style="width:70px;text-align:center;">本周Done</div><div class="virtual-cell" style="width:90px;text-align:center;">下周Planned</div><div class="virtual-cell" style="width:80px;">状态</div><div class="virtual-cell" style="width:60px;">操作</div></div></div></div>
       <div class="card"><h3>Pending Assignment 工厂池</h3><div class="muted">Planned 且 Assessor 为空/TBD</div>
       <div id="pendingStats" class="muted" style="margin-top:6px;"></div><div id="pendingTable" class="virtual-scroll-container" style="margin-top:10px; max-height:280px; overflow-y:auto; overflow-x:hidden;"><div class="virtual-header"><div class="virtual-cell" style="width:40px;text-align:center;">#</div><div class="virtual-cell" style="width:160px;">Factory</div><div class="virtual-cell" style="width:60px;">FID</div><div class="virtual-cell" style="width:60px;">Office</div><div class="virtual-cell" style="width:110px;">Available</div><div class="virtual-cell" style="width:80px;">Status</div><div class="virtual-cell" style="width:60px;">操作</div></div></div></div>
-      <div class="card"><h3 style="display:inline-block;">风险 & 冲突提醒</h3><span class="help-icon" title="功能说明：
+      <div class="card risk-card" id="riskCard"><h3 style="display:inline-block;">风险 & 冲突提醒</h3><span class="help-icon" title="功能说明：
 🔴 超负荷 - Assessor本周Planned≥4条
 🟡 接近上限 - Assessor本周Planned=3条
 🔴 日期冲突 - 同一天同一人多条安排
@@ -304,8 +333,8 @@
     <div class="card" style="margin-top:12px;">
       <h3 style="margin-bottom:4px;">Assessment 列表（报告时间状态灯：🟢时间充裕 🟡剩3天内 🟤剩1天 🔴已超期）</h3>
       <div id="listAvailSummary" class="avail-summary" style="margin-bottom:8px;"></div>
-      <div style="margin-bottom:8px;"><button id="btnExportAssessment" class="btn" title="导出当前筛选的Assessment列表">📊 导出列表</button></div>
-      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell" style="width:350px;">Vendor</div><div class="virtual-cell" style="width:380px;">Factory</div><div class="virtual-cell" style="width:80px;">FID</div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell" style="width:110px;">Assess Date</div><div class="virtual-cell" style="width:100px;">Status</div><div class="virtual-cell" style="width:180px;">Assessor</div><div class="virtual-cell" style="width:130px;">报告时间</div><div class="virtual-cell" style="width:70px;text-align:center;">Score</div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div></div></div>
+      <div style="margin-bottom:8px;"><button id="btnExportAssessment" class="btn" title="导出当前筛选的Assessment列表">📊 导出列表</button> <button id="btnAddFactory" class="btn primary">➕ 添加工厂</button></div>
+      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell sortable" data-sort="supplier" style="width:350px;">Vendor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="factory" style="width:380px;">Factory <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="fid" style="width:80px;">FID <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell sortable" data-sort="assessDate" style="width:110px;">Assess Date <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="status" style="width:100px;">Status <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="assessor" style="width:180px;">Assessor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="reportDate" style="width:130px;">报告时间 <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="score" style="width:70px;text-align:center;">Score <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div></div></div>
     </div>
   </section>
 
@@ -1129,7 +1158,7 @@ class SupabaseDataManager {
         statusEl.style.color = '#dc2626';
         break;
       case 'syncing':
-        statusEl.textContent = '🔄 ' + (message || '同步中...');
+        statusEl.innerHTML = '<span class="syncing-icon">🔄</span> ' + (message || '同步中...');
         statusEl.style.color = '#2563eb';
         break;
       default:
@@ -1335,13 +1364,32 @@ class VirtualScroller {
 
   setData(data) {
     this.data = data;
-    // 检查是否是无滚动模式
+    if (data.length === 0) {
+      this._showEmpty();
+      return;
+    }
+    this._hideEmpty();
     if (this.container.classList.contains('no-scroll')) {
       this._renderAllRows();
     } else {
       this._updateTotalHeight();
       this._forceRender();
     }
+  }
+
+  _showEmpty() {
+    this.rowElements.forEach(el => el.remove());
+    this.rowElements.clear();
+    this.content.innerHTML = '';
+    this.content.style.height = 'auto';
+    const msg = this.options.emptyMessage || '暂无数据';
+    const icon = this.options.emptyIcon || '📋';
+    this.content.innerHTML = `<div class="virtual-scroll-empty"><div class="empty-icon">${icon}</div><div class="empty-title">${msg}</div></div>`;
+  }
+
+  _hideEmpty() {
+    const emptyEl = this.content.querySelector('.virtual-scroll-empty');
+    if (emptyEl) emptyEl.remove();
   }
 
   _renderAllRows() {
@@ -2007,11 +2055,14 @@ class CalendarView {
       this._selectedFactories.delete(index);
     }
     this._updateBatchBar();
+    const row = document.querySelector(`.timeline-row[data-factory-index="${index}"]`);
+    if (row) row.classList.toggle('selected', checked);
   }
 
   _clearSelection() {
     this._selectedFactories.clear();
     document.querySelectorAll('.timeline-checkbox').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.timeline-row.selected').forEach(r => r.classList.remove('selected'));
     this._updateBatchBar();
   }
 
@@ -2257,7 +2308,7 @@ class ScheduleApp {
     this.workloadCalc = new WorkloadCalculator(this.dataManager);
     this.calendar = new CalendarView(this.dataManager);
     this.backupManager = new BackupManager(this.dataManager);
-    this.state = { office: '', assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null };
+    this.state = { office: '', assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null, sortField: '', sortDir: 'asc' };
     this.virtualScrollers = {};
     this.init();
   }
@@ -2277,6 +2328,8 @@ class ScheduleApp {
     // Assessor 表格虚拟滚动
     this.virtualScrollers.assessor = new VirtualScroller('assessorTable', {
       rowHeight: 26,
+      emptyMessage: '暂无 Assessor 数据',
+      emptyIcon: '👤',
       renderRow: (row, idx) => {
         const badge = row.load === 'green' ? 'green' : (row.load === 'yellow' ? 'yellow' : 'red');
         const text = row.load === 'green' ? '可安排' : (row.load === 'yellow' ? '接近上限' : '超负荷');
@@ -2287,6 +2340,8 @@ class ScheduleApp {
     // Pending 表格虚拟滚动
     this.virtualScrollers.pending = new VirtualScroller('pendingTable', {
       rowHeight: 44,
+      emptyMessage: '没有待分配的工厂',
+      emptyIcon: '✅',
       renderRow: (row, idx) => {
         const st = String(this.dataManager.get(row, 'status') || '').trim();
         return `<div class="virtual-cell" style="width:40px;text-align:center;">${idx + 1}</div><div class="virtual-cell" style="width:160px;">${Utils.esc(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" style="width:60px;">${Utils.esc(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" style="width:60px;">${Utils.esc(this.dataManager.get(row, 'office'))}</div><div class="virtual-cell" style="width:110px;">${Utils.esc(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" style="width:80px;">${this._statusBadge(st)}</div><div class="virtual-cell" style="width:60px;"><button class="btn" onclick="window.app.openDrawer(${this.dataManager.getAll().indexOf(row)})">安排</button></div>`;
@@ -2296,6 +2351,8 @@ class ScheduleApp {
     // 主表格虚拟滚动
     this.virtualScrollers.main = new VirtualScroller('mainTable', {
       rowHeight: 44,
+      emptyMessage: '没有匹配的记录，试试调整筛选条件',
+      emptyIcon: '📋',
       renderRow: (row, idx) => {
         const st = String(this.dataManager.get(row, 'status') || '').trim();
         const widths = this._getColumnWidths();
@@ -2304,7 +2361,9 @@ class ScheduleApp {
         const assessDate = this.dataManager.get(row, 'assessDate');
         const reportInfo = this._calcReportDueInfo(reportDate, assessDate, st);
         const remarks = this.dataManager.get(row, 'remarks') || '';
-        return `<div class="virtual-cell" data-col="0" style="width:${widths[0]}px;text-align:center;">${idx + 1}</div><div class="virtual-cell" data-col="1" style="width:${widths[1]}px;">${Utils.esc(this.dataManager.get(row, 'supplier'))}</div><div class="virtual-cell" data-col="2" style="width:${widths[2]}px;">${Utils.esc(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" data-col="3" style="width:${widths[3]}px;">${Utils.esc(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" data-col="4" style="width:${widths[4]}px;">${Utils.esc(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" data-col="5" style="width:${widths[5]}px;">${Utils.esc(this.dataManager.get(row, 'assessDate'))}</div><div class="virtual-cell" data-col="6" style="width:${widths[6]}px;">${this._statusBadge(st)}</div><div class="virtual-cell" data-col="7" style="width:${widths[7]}px;">${Utils.esc(this.dataManager.get(row, 'assessor'))}</div><div class="virtual-cell" data-col="8" style="width:${widths[8]}px;">${reportInfo.date}${reportInfo.light}</div><div class="virtual-cell" data-col="9" style="width:${widths[9]}px;text-align:center;">${Utils.esc(this.dataManager.get(row, 'score'))}</div><div class="virtual-cell" data-col="10" style="width:${widths[10]}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${Utils.esc(remarks)}">${Utils.esc(remarks)}</div><div class="virtual-cell" data-col="11" style="width:${widths[11]}px;"><button class="btn" onclick="window.app.openDrawer(${this.dataManager.getAll().indexOf(row)})">安排/编辑</button></div><div class="virtual-cell" data-col="12" style="width:${widths[12]}px;text-align:center;"><button class="btn" style="background:#2563eb;color:#fff;font-size:11px;padding:2px 6px;" onclick="window.app.duplicateRow(${this.dataManager.getAll().indexOf(row)})">复制</button></div><div class="virtual-cell" data-col="13" style="width:${widths[13]}px;text-align:center;"><button class="btn" style="background:#dc2626;color:#fff;" onclick="window.app.deleteRow(${this.dataManager.getAll().indexOf(row)})">删除</button></div>`;
+        const zebra = idx % 2 === 0 ? '' : 'background:#f9fafb;';
+        const hl = (text) => this._highlightSearch(text);
+        return `<div class="virtual-cell" data-col="0" style="width:${widths[0]}px;text-align:center;${zebra}">${idx + 1}</div><div class="virtual-cell" data-col="1" style="width:${widths[1]}px;${zebra}">${hl(this.dataManager.get(row, 'supplier'))}</div><div class="virtual-cell" data-col="2" style="width:${widths[2]}px;${zebra}">${hl(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" data-col="3" style="width:${widths[3]}px;${zebra}">${hl(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" data-col="4" style="width:${widths[4]}px;${zebra}">${hl(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" data-col="5" style="width:${widths[5]}px;${zebra}">${hl(this.dataManager.get(row, 'assessDate'))}</div><div class="virtual-cell" data-col="6" style="width:${widths[6]}px;${zebra}">${this._statusBadge(st)}</div><div class="virtual-cell" data-col="7" style="width:${widths[7]}px;${zebra}">${hl(this.dataManager.get(row, 'assessor'))}</div><div class="virtual-cell" data-col="8" style="width:${widths[8]}px;${zebra}">${reportInfo.date}${reportInfo.light}</div><div class="virtual-cell" data-col="9" style="width:${widths[9]}px;text-align:center;${zebra}">${hl(this.dataManager.get(row, 'score'))}</div><div class="virtual-cell" data-col="10" style="width:${widths[10]}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${zebra}" title="${Utils.esc(remarks)}">${hl(remarks)}</div><div class="virtual-cell" data-col="11" style="width:${widths[11]}px;${zebra}"><button class="btn" onclick="window.app.openDrawer(${this.dataManager.getAll().indexOf(row)})">安排/编辑</button></div><div class="virtual-cell" data-col="12" style="width:${widths[12]}px;text-align:center;${zebra}"><button class="btn" style="background:#2563eb;color:#fff;font-size:11px;padding:2px 6px;" onclick="window.app.duplicateRow(${this.dataManager.getAll().indexOf(row)})">复制</button></div><div class="virtual-cell" data-col="13" style="width:${widths[13]}px;text-align:center;${zebra}"><button class="btn" style="background:#dc2626;color:#fff;" onclick="window.app.deleteRow(${this.dataManager.getAll().indexOf(row)})">删除</button></div>`;
       }
     });
   }
@@ -2328,7 +2387,7 @@ class ScheduleApp {
     const debouncedSearch = Utils.debounce((value) => { this.state.q = value; this.renderAll(); }, Config.DEBOUNCE_DELAY);
     document.getElementById('search').addEventListener('input', e => debouncedSearch(e.target.value));
     
-    document.getElementById('btnReset').addEventListener('click', () => { this.state = { office: '', assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null }; document.getElementById('search').value = ''; this._initFilters(); this.renderAll(); });
+    document.getElementById('btnReset').addEventListener('click', () => { this.state = { office: '', assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null, sortField: '', sortDir: 'asc' }; document.getElementById('search').value = ''; this._initFilters(); this._updateSortArrows(); this.renderAll(); });
     document.getElementById('tabList').addEventListener('click', () => this._switchTab('list'));
     document.getElementById('tabCal').addEventListener('click', () => this._switchTab('calendar'));
     document.getElementById('prevMonth').addEventListener('click', () => this.calendar.prevMonth());
@@ -2365,6 +2424,21 @@ class ScheduleApp {
     
     // 初始化列宽调整功能
     this._initColumnResize();
+
+    // 列排序事件绑定
+    document.querySelectorAll('#mainTable .virtual-cell.sortable').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const field = cell.dataset.sort;
+        if (this.state.sortField === field) {
+          this.state.sortDir = this.state.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.state.sortField = field;
+          this.state.sortDir = 'asc';
+        }
+        this._updateSortArrows();
+        this.renderAll();
+      });
+    });
     
     // 初始化备份状态显示
     this._updateBackupStatus();
@@ -2831,7 +2905,7 @@ class ScheduleApp {
     st = String(st || '').trim();
     if (st === '' || st === '空白') return '<span class="badge yellow">空白</span>';
     if (st === 'Preparing Report') return '<span class="badge yellow">Preparing Report</span>';
-    if (st === 'Done') return '<span class="badge gray">Done</span>';
+    if (st === 'Done') return '<span class="badge green">Done</span>';
     if (st === 'Planned') return '<span class="badge blue">Planned</span>';
     if (st === 'Inactive') return '<span class="badge red">Inactive</span>';
     return `<span class="badge">${Utils.esc(st)}</span>`;
@@ -2897,16 +2971,51 @@ class ScheduleApp {
     // 状态灯：3天黄/1天棕/超期红
     let light = '';
     if (diffDays < 0) {
-      light = ' <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#dc2626;margin-left:4px;" title="已超期"></span>';
+      light = ' <span class="report-light overdue" title="已超期"></span>';
     } else if (diffDays <= 1) {
-      light = ' <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#92400e;margin-left:4px;" title="剩1天"></span>';
+      light = ' <span class="report-light critical" title="剩1天"></span>';
     } else if (diffDays <= 3) {
-      light = ' <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-left:4px;" title="剩3天内"></span>';
+      light = ' <span class="report-light warning" title="剩3天内"></span>';
     } else {
-      light = ' <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-left:4px;" title="时间充裕"></span>';
+      light = ' <span class="report-light ok" title="时间充裕"></span>';
     }
     
     return { date: formattedDate, light };
+  }
+
+  _highlightSearch(text) {
+    text = String(text || '');
+    const q = this.state.q.trim();
+    if (!q) return Utils.esc(text);
+    const escaped = Utils.esc(text);
+    const escapedQ = Utils.esc(q);
+    const regex = new RegExp(`(${escapedQ.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return escaped.replace(regex, '<span class="search-highlight">$1</span>');
+  }
+
+  _updateSortArrows() {
+    document.querySelectorAll('#mainTable .virtual-cell.sortable .sort-arrow').forEach(arrow => {
+      arrow.textContent = '';
+    });
+    if (this.state.sortField) {
+      const cell = document.querySelector(`#mainTable .virtual-cell.sortable[data-sort="${this.state.sortField}"] .sort-arrow`);
+      if (cell) cell.textContent = this.state.sortDir === 'asc' ? '▲' : '▼';
+    }
+  }
+
+  _sortData(rows) {
+    if (!this.state.sortField) return rows;
+    const field = this.state.sortField;
+    const dir = this.state.sortDir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      let va = String(this.dataManager.get(a, field) || '').trim();
+      let vb = String(this.dataManager.get(b, field) || '').trim();
+      if (field === 'score') {
+        const na = parseFloat(va), nb = parseFloat(vb);
+        if (!isNaN(na) && !isNaN(nb)) return (na - nb) * dir;
+      }
+      return va.localeCompare(vb, 'zh-CN') * dir;
+    });
   }
 
   _filteredRows() {
@@ -2944,7 +3053,27 @@ class ScheduleApp {
     return target >= from && target <= to;
   }
 
+  _renderFilterChips() {
+    const container = document.getElementById('filterChips');
+    if (!container) return;
+    let html = '';
+    if (this.state.office) html += `<span class="filter-chip">Office: ${Utils.esc(this.state.office)} <span class="chip-close" onclick="window.app._clearFilter('office')">×</span></span>`;
+    if (this.state.assessor) html += `<span class="filter-chip">Assessor: ${Utils.esc(this.state.assessor)} <span class="chip-close" onclick="window.app._clearFilter('assessor')">×</span></span>`;
+    if (this.state.status) html += `<span class="filter-chip">Status: ${Utils.esc(this.state.status)} <span class="chip-close" onclick="window.app._clearFilter('status')">×</span></span>`;
+    if (this.state.q) html += `<span class="filter-chip">搜索: "${Utils.esc(this.state.q)}" <span class="chip-close" onclick="window.app._clearFilter('search')">×</span></span>`;
+    container.innerHTML = html;
+  }
+
+  _clearFilter(type) {
+    if (type === 'office') { this.state.office = ''; document.getElementById('filterOffice').value = ''; }
+    if (type === 'assessor') { this.state.assessor = ''; document.getElementById('filterAssessor').value = ''; }
+    if (type === 'status') { this.state.status = ''; document.getElementById('filterStatus').value = ''; }
+    if (type === 'search') { this.state.q = ''; document.getElementById('search').value = ''; }
+    this.renderAll();
+  }
+
   renderAll() {
+    this._renderFilterChips();
     this._renderAssessorTable();
     this._renderPendingTable();
     this._renderRiskBox();
@@ -3120,6 +3249,11 @@ class ScheduleApp {
       }
     }
     document.getElementById('riskBox').innerHTML = html;
+    const riskCard = document.getElementById('riskCard');
+    if (riskCard) {
+      riskCard.classList.remove('has-risk', 'no-risk');
+      riskCard.classList.add(hasAnyIssue ? 'has-risk' : 'no-risk');
+    }
   }
 
   // 检测同一天同一人有多条记录
@@ -3230,7 +3364,8 @@ class ScheduleApp {
 
   _renderMainTable() {
     const base = this._filteredRows();
-    this.virtualScrollers.main.setData(base);
+    const sorted = this._sortData(base);
+    this.virtualScrollers.main.setData(sorted);
   }
 
   // Drawer 方法
