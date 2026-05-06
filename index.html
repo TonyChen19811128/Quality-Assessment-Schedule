@@ -278,7 +278,7 @@
       <span style="font-size:11px;color:var(--muted);font-weight:600;">筛选：</span>
       <select id="filterOffice" class="btn"></select>
       <select id="filterAssessor" class="btn"></select>
-      <select id="filterStatus" class="btn"><option value="">全部状态</option><option value="空白">空白</option><option value="Planned">Planned</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select>
+      <select id="filterStatus" class="btn"><option value="">全部状态</option><option value="空白">空白</option><option value="Planned">Planned</option><option value="Pending">Pending</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select>
       <input id="search" class="search-input" placeholder="🔍 搜索 供应商 / 工厂 / FID / Assessor" />
       <button id="btnReset" class="btn">重置</button>
       <div class="row tabs">
@@ -427,7 +427,7 @@
       <div class="muted" style="margin-top:4px;">保存时会写回到 "Factory Available Week" 字段，格式：YYYY-MM-DD ~ YYYY-MM-DD</div>
       <div class="field" style="margin-top:12px;"><label>Assessor Name</label><select id="fAssessor"></select></div>
       <div class="field"><label>Assess Date</label><div style="display:flex;gap:8px;"><input id="fDate" type="text" placeholder="YYYY-MM-DD" style="flex:1;" /><button id="btnDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
-      <div class="field"><label>Status</label><select id="fStatus"><option value="空白">空白</option><option value="Planned">Planned</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select></div>
+      <div class="field"><label>Status</label><select id="fStatus"><option value="空白">空白</option><option value="Planned">Planned</option><option value="Pending">Pending</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select></div>
       <div class="field"><label>报告时间</label><div style="display:flex;gap:8px;"><input id="fReportDate" type="text" placeholder="YYYY-MM-DD（留空则自动计算）" style="flex:1;" /><button id="btnReportDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
       <div id="scoreWrap" class="field" style="display:block;">
         <label>Score（可编辑）</label>
@@ -1520,8 +1520,8 @@ class WorkloadCalculator {
       const d = Utils.parseISO(this.dataManager.get(r, 'assessDate'));
       const st = String(this.dataManager.get(r, 'status') || '').trim();
       if (!d) continue;
-      if (d >= ws && d < we) { if (st === 'Planned') map.get(a).plannedThis++; if (st === 'Done') map.get(a).doneThis++; }
-      if (d >= nws && d < nwe) { if (st === 'Planned') map.get(a).plannedNext++; }
+      if (d >= ws && d < we) { if (st === 'Planned' || st === 'Pending') map.get(a).plannedThis++; if (st === 'Done') map.get(a).doneThis++; }
+      if (d >= nws && d < nwe) { if (st === 'Planned' || st === 'Pending') map.get(a).plannedNext++; }
     }
     
     const out = [...map.values()];
@@ -1795,6 +1795,7 @@ class CalendarView {
         let statusClass = 'blank';
         if (status === 'Planned') statusClass = 'planned';
         else if (status === 'Done') statusClass = 'done';
+        else if (status === 'Pending') statusClass = 'pending';
         else if (status === 'Preparing Report') statusClass = 'preparing';
         events.push({ index: idx, factory: this.dataManager.get(row, 'factory'), assessor: this.dataManager.get(row, 'assessor'), status: status || '空白', statusClass, row });
       }
@@ -2916,6 +2917,7 @@ class ScheduleApp {
     if (st === 'Preparing Report') return '<span class="badge yellow">Preparing Report</span>';
     if (st === 'Done') return '<span class="badge green">Done</span>';
     if (st === 'Planned') return '<span class="badge blue">Planned</span>';
+    if (st === 'Pending') return '<span class="badge orange">Pending</span>';
     if (st === 'Inactive') return '<span class="badge red">Inactive</span>';
     return `<span class="badge">${Utils.esc(st)}</span>`;
   }
