@@ -1087,18 +1087,27 @@ class SupabaseDataManager {
   _mergeRows(localRows, remoteRows) {
     const mergedMap = new Map();
 
-    remoteRows.forEach(row => {
+    // 辅助函数：生成唯一键（Supplier + Factory + FID）
+    const getUniqueKey = (row) => {
       const fid = String(this.get(row, 'fid') || '').trim();
-      if (fid) mergedMap.set(fid, { ...row });
+      const supplier = String(this.get(row, 'supplier') || '').trim();
+      const factory = String(this.get(row, 'factory') || '').trim();
+      if (fid) {
+        return `${supplier}::${factory}::${fid}`;
+      }
+      return '__new_' + Math.random().toString(36).slice(2);
+    };
+
+    // 先添加远程数据
+    remoteRows.forEach(row => {
+      const key = getUniqueKey(row);
+      mergedMap.set(key, { ...row });
     });
 
+    // 再添加本地数据（相同 key 会覆盖，但相同 FID 不同 Supplier/Factory 会有不同 key）
     localRows.forEach(row => {
-      const fid = String(this.get(row, 'fid') || '').trim();
-      if (fid) {
-        mergedMap.set(fid, { ...row });
-      } else {
-        mergedMap.set('__new_' + Math.random().toString(36).slice(2), { ...row });
-      }
+      const key = getUniqueKey(row);
+      mergedMap.set(key, { ...row });
     });
 
     return [...mergedMap.values()];
@@ -3846,21 +3855,20 @@ class ScheduleApp {
           if (af || at) { avail = Utils.formatAvailRange(af, at); }
           else if (aw) { avail = aw; }
 
-          const existingIndex = rows.findIndex(x => String(this.dataManager.get(x, 'fid') || '').trim() === fid);
+          // 检查是否已存在完全相同的记录（Supplier + Factory + FID 都相同）
+          const existingIndex = rows.findIndex(x => {
+            const existingFid = String(this.dataManager.get(x, 'fid') || '').trim();
+            const existingSupplier = String(this.dataManager.get(x, 'supplier') || '').trim();
+            const existingFactory = String(this.dataManager.get(x, 'factory') || '').trim();
+            return existingFid === fid && 
+                   existingSupplier === supplier && 
+                   existingFactory === factory;
+          });
+          
           if (existingIndex >= 0) {
-            const obj = rows[existingIndex];
-            if (C.supplier) obj[C.supplier] = supplier;
-            if (C.factory) obj[C.factory] = factory;
-            if (C.office) obj[C.office] = office;
-            if (C.priority) obj[C.priority] = priority;
-            if (C.vendorType) obj[C.vendorType] = vendorType;
-            if (C.avail) obj[C.avail] = avail;
-
-            if (iAssessDate >= 0 && C.assessDate) obj[C.assessDate] = String(CSVParser.cell(line, iAssessDate)).trim();
-            if (iStatus >= 0 && C.status) obj[C.status] = String(CSVParser.cell(line, iStatus)).trim() || obj[C.status] || '空白';
-            if (iAssessor >= 0 && C.assessor) obj[C.assessor] = String(CSVParser.cell(line, iAssessor)).trim();
-            if (iScore >= 0 && C.score) obj[C.score] = String(CSVParser.cell(line, iScore)).trim();
-            updated++;
+            // Supplier + Factory + FID 都相同，跳过不导入
+            skipped++;
+            continue;
           } else {
             const obj = {};
             if (C.supplier) obj[C.supplier] = supplier;
@@ -3883,7 +3891,7 @@ class ScheduleApp {
         this.dataManager._saveToLocalStorage();
         this.dataManager.notify();
         this._initFilters();
-        this.showError(`✅ 导入完成！新增 ${added} 条，更新 ${updated} 条，跳过 ${skipped} 条`);
+        this.showError(`✅ 导入完成！新增 ${added} 条，跳过 ${skipped} 条（已存在）`);
       } catch (e) { this.showError('CSV 导入失败：' + e); }
     };
     reader.readAsText(file, 'utf-8');
