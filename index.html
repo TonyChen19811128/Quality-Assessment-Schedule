@@ -37,6 +37,7 @@
     .badge.red{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
     .badge.yellow{background:#fffbeb;color:#92400e;border-color:#fde68a;}
     .badge.green{background:#ecfdf5;color:#065f46;border-color:#a7f3d0;}
+    .badge.orange{background:#fff7ed;color:#c2410c;border-color:#fed7aa;}
     .help-icon{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:#e5e7eb;color:#6b7280;font-size:12px;cursor:help;margin-left:8px;vertical-align:middle;}
     .drawer{position:fixed;top:0;right:-440px;width:440px;height:100%;background:#fff;border-left:1px solid var(--border);box-shadow:-10px 0 30px rgba(0,0,0,.08);transition:right .25s ease;z-index:60;}
     .drawer.open{right:0;}
@@ -99,6 +100,7 @@
     .calendar-event:hover { background: #c7d2fe; transform: scale(1.01); }
     .calendar-event.planned { background: #dbeafe; border-left: 3px solid var(--blue); }
     .calendar-event.done { background: #d1fae5; border-left: 3px solid var(--green); }
+    .calendar-event.pending { background: #fff7ed; border-left: 3px solid #f97316; }
     .calendar-event.preparing { background: #fed7aa; border-left: 3px solid var(--yellow); }
     .calendar-event.blank { background: #f3f4f6; border-left: 3px solid var(--gray); }
     .calendar-event .event-factory { font-weight: 600; font-size: 11px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -515,28 +517,20 @@
 
 <script>
 // ============ Supabase 初始化 ============
-const SUPABASE_URL = 'https://zxfypgylgygqwhufepwm.supabase.co';   // 从第二步复制的 Project URL
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4ZnlwZ3lsZ3lncXdodWZlcHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzEyMTMsImV4cCI6MjA5MzA0NzIxM30.wUhkYYxbhThbf0TBoDZ3eLbQV0ECP-qzzu6vWrJ3aRc';               // 从第二步复制的 anon public key
+// 安全提示：这些密钥有 Row Level Security 保护，只能访问允许的数据
+// 如需更高级别的安全，请使用后端服务或 Supabase Auth
+const SUPABASE_URL = 'https://zxfypgylgygqwhufepwm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4ZnlwZ3lsZ3lncXdodWZlcHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzEyMTMsImV4cCI6MjA5MzA0NzIxM30.wUhkYYxbhThbf0TBoDZ3eLbQV0ECP-qzzu6vWrJ3aRc';
 
 // 尝试初始化 Supabase 客户端
-// 使用 window.supabaseClient 避免与 Supabase 库的变量冲突
 window.supabaseClient = null;
-console.log('检查 Supabase 库...', window.supabase);
 try {
   if (window.supabase && typeof window.supabase.createClient === 'function') {
     window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase 客户端初始化成功');
   } else if (typeof createClient === 'function') {
-    // 尝试直接使用全局的 createClient
     window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase 客户端初始化成功（使用全局 createClient）');
-  } else {
-    console.warn('Supabase 库未加载，将使用本地存储模式');
-    console.log('window.supabase:', window.supabase);
-    console.log('typeof window.supabase:', typeof window.supabase);
   }
 } catch (e) {
-  console.error('Supabase 初始化失败:', e);
   window.supabaseClient = null;
 }
 
@@ -706,7 +700,6 @@ class BackupManager {
     if (savedFolderName) {
       // 由于 File System Access API 的句柄无法持久化存储
       // 页面刷新后需要用户重新选择文件夹
-      console.log('备份文件夹名称已保存:', savedFolderName);
     }
   }
 
@@ -770,7 +763,6 @@ class BackupManager {
   // 执行备份
   async doBackup() {
     if (!this.dirHandle) {
-      console.log('未设置备份文件夹');
       return false;
     }
 
@@ -779,7 +771,6 @@ class BackupManager {
       if (this.dirHandle.requestPermission) {
         const permission = await this.dirHandle.requestPermission({ mode: 'readwrite' });
         if (permission !== 'granted') {
-          console.log('备份文件夹权限被拒绝');
           return false;
         }
       }
@@ -797,8 +788,6 @@ class BackupManager {
       const writable = await fileHandle.createWritable();
       await writable.write(data);
       await writable.close();
-
-      console.log(`✅ 自动备份成功: ${fileName}`);
       
       // 清理旧备份（保留最近 10 个）
       await this._cleanOldBackups();
@@ -827,7 +816,6 @@ class BackupManager {
 
       for (const file of toDelete) {
         await this.dirHandle.removeEntry(file.name);
-        console.log(`🗑️ 删除旧备份: ${file.name}`);
       }
     } catch (e) {
       console.error('清理旧备份失败:', e);
@@ -884,11 +872,9 @@ class SupabaseDataManager {
     const localData = this._loadFromLocalStorage();
     if (localData && localData.length > 0) {
       this.rows = localData;
-      console.log(`构造函数中从本地加载了 ${localData.length} 条记录`);
     } else if (typeof DATA !== 'undefined' && DATA.rows) {
       // 如果没有本地数据，使用默认 DATA
       this.rows = JSON.parse(JSON.stringify(DATA.rows));
-      console.log(`构造函数中使用默认 DATA，${this.rows.length} 条记录`);
     }
     
     // 加载自定义 Assessors
@@ -897,10 +883,14 @@ class SupabaseDataManager {
       this.customAssessors = JSON.parse(savedAssessors);
     }
     
+    // 默认按 Supplier 排序
+    this.sortBySupplier();
+    
     // 异步初始化 Supabase
     this._initPromise = this.init().then(() => {
       this.initialized = true;
-      this.notify();
+      // 从 Supabase 加载数据后再次排序
+      this.sortBySupplier();
     }).catch(() => {
       // 初始化失败时也要通知，确保界面能显示本地数据或空状态
       this.initialized = true;
@@ -918,21 +908,16 @@ class SupabaseDataManager {
   
   // 初始化 Supabase 连接
   async init() {
-    console.log('SupabaseDataManager.init() 被调用');
     if (!supabase) {
-      console.log('Supabase 未初始化，使用本地模式');
       this._updateSyncStatus('local', '本地模式（Supabase 未加载）');
       return;
     }
 
-    console.log('Supabase 客户端存在，开始连接...');
     this._updateSyncStatus('syncing', '正在连接云端...');
 
     try {
       // 测试连接
-      console.log('测试 Supabase 连接...');
       const { data: testData, error: testError } = await supabase.from('assessments').select('count', { count: 'exact', head: true });
-      console.log('连接测试结果:', { testData, testError });
 
       if (testError) {
         console.error('Supabase 连接测试失败:', testError);
@@ -941,13 +926,10 @@ class SupabaseDataManager {
       }
 
       // 从 Supabase 加载数据
-      console.log('从 Supabase 加载数据...');
       const { data, error } = await supabase
         .from('assessments')
         .select('*')
         .order('id', { ascending: true });
-
-      console.log('加载数据结果:', { dataCount: data?.length, error });
 
       if (error) {
         console.error('从 Supabase 加载数据失败:', error);
@@ -958,12 +940,10 @@ class SupabaseDataManager {
       if (data && data.length > 0) {
         // 转换 Supabase 数据格式为应用格式
         this.rows = data.map(item => item.data);
-        console.log(`从 Supabase 加载了 ${data.length} 条记录`);
         // 保存到本地缓存
         this._saveToLocalStorage();
         this._updateSyncStatus('connected', `已同步 ${data.length} 条记录`);
       } else {
-        console.log('Supabase 中没有数据，使用本地数据');
         // 如果有本地数据，上传到 Supabase
         if (this.rows.length > 0) {
           this._updateSyncStatus('syncing', '正在上传本地数据...');
@@ -992,7 +972,6 @@ class SupabaseDataManager {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'assessments' },
         (payload) => {
-          console.log('收到实时更新:', payload);
           // 重新加载数据
           this._reloadFromSupabase();
         }
@@ -1074,7 +1053,6 @@ class SupabaseDataManager {
         if (delError) console.warn('清理多余记录失败:', delError);
       }
 
-      console.log(`成功同步 ${merged.length} 条记录到 Supabase（已合并远程数据）`);
       this._updateSyncStatus('connected', `已同步 ${merged.length} 条记录`);
     } catch (e) {
       console.error('同步到 Supabase 错误:', e);
@@ -1234,7 +1212,26 @@ class SupabaseDataManager {
     if (k) row[k] = value;
   }
 
-  getAll() { return this.rows; }
+  getAll() { 
+    return this.rows; 
+  }
+
+  // 按 Supplier + Factory 排序
+  sortBySupplier() {
+    this.rows.sort((a, b) => {
+      const supplierA = String(this.get(a, 'supplier') || '').toLowerCase();
+      const supplierB = String(this.get(b, 'supplier') || '').toLowerCase();
+      const factoryA = String(this.get(a, 'factory') || '').toLowerCase();
+      const factoryB = String(this.get(b, 'factory') || '').toLowerCase();
+      
+      if (supplierA !== supplierB) {
+        return supplierA.localeCompare(supplierB);
+      }
+      return factoryA.localeCompare(factoryB);
+    });
+    this._saveToLocalStorage();
+    this.notify();
+  }
 
   async updateRow(index, updates) {
     if (index < 0 || index >= this.rows.length) return;
@@ -1357,8 +1354,9 @@ class VirtualScroller {
     this.header = this.container.querySelector('.virtual-header');
     this.content = this.container.querySelector('.virtual-scroll-content');
     this._throttledScroll = Utils.throttle(() => this._onScroll(), 16);
+    this._resizeHandler = Utils.debounce(() => this.refresh(), 100);
     this.container.addEventListener('scroll', this._throttledScroll, { passive: true });
-    window.addEventListener('resize', Utils.debounce(() => this.refresh(), 100));
+    window.addEventListener('resize', this._resizeHandler);
     
     if (this.options.onRowClick) {
       this.content.addEventListener('click', (e) => {
@@ -1423,7 +1421,7 @@ class VirtualScroller {
     el.style.top = 'auto';
     el.style.height = 'auto';
     el.style.minHeight = `${this.options.rowHeight}px`;
-    el.innerHTML = this.options.renderRow(row, index);
+    el.innerHTML = this.options.renderRow(row, index, this.data);
     return el;
   }
 
@@ -1484,13 +1482,14 @@ class VirtualScroller {
     } catch (e) {
       el.style.minWidth = '1700px';
     }
-    el.innerHTML = this.options.renderRow(row, index);
+    el.innerHTML = this.options.renderRow(row, index, this.data);
     return el;
   }
 
   refresh() { this._onScroll(); }
   destroy() {
     this.container.removeEventListener('scroll', this._throttledScroll);
+    window.removeEventListener('resize', this._resizeHandler);
     this.rowElements.forEach(el => el.remove());
     this.rowElements.clear();
   }
@@ -2352,9 +2351,11 @@ class ScheduleApp {
       rowHeight: 44,
       emptyMessage: '没有待分配的工厂',
       emptyIcon: '✅',
-      renderRow: (row, idx) => {
+      renderRow: (row, idx, allData) => {
         const st = String(this.dataManager.get(row, 'status') || '').trim();
-        return `<div class="virtual-cell" style="width:40px;text-align:center;">${idx + 1}</div><div class="virtual-cell" style="width:160px;">${Utils.esc(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" style="width:60px;">${Utils.esc(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" style="width:60px;">${Utils.esc(this.dataManager.get(row, 'office'))}</div><div class="virtual-cell" style="width:110px;">${Utils.esc(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" style="width:80px;">${this._statusBadge(st)}</div><div class="virtual-cell" style="width:60px;"><button class="btn" onclick="window.app.openDrawer(${this.dataManager.getAll().indexOf(row)})">安排</button></div>`;
+        const originalIndex = allData ? allData.indexOf(row) + 1 : idx + 1;
+        const rowIndex = allData ? allData.indexOf(row) : idx;
+        return `<div class="virtual-cell" style="width:40px;text-align:center;">${originalIndex}</div><div class="virtual-cell" style="width:160px;">${Utils.esc(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" style="width:60px;">${Utils.esc(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" style="width:60px;">${Utils.esc(this.dataManager.get(row, 'office'))}</div><div class="virtual-cell" style="width:110px;">${Utils.esc(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" style="width:80px;">${this._statusBadge(st)}</div><div class="virtual-cell" style="width:60px;"><button class="btn" onclick="window.app.openDrawer(${rowIndex})">安排</button></div>`;
       }
     });
 
@@ -2363,7 +2364,7 @@ class ScheduleApp {
       rowHeight: 44,
       emptyMessage: '没有匹配的记录，试试调整筛选条件',
       emptyIcon: '📋',
-      renderRow: (row, idx) => {
+      renderRow: (row, idx, allData) => {
         const st = String(this.dataManager.get(row, 'status') || '').trim();
         const widths = this._getColumnWidths();
         // 计算报告时间和状态灯（只在Preparing Report时显示灯）
@@ -2373,7 +2374,9 @@ class ScheduleApp {
         const remarks = this.dataManager.get(row, 'remarks') || '';
         const zebra = idx % 2 === 0 ? '' : 'background:#f9fafb;';
         const hl = (text) => this._highlightSearch(text);
-        return `<div class="virtual-cell" data-col="0" style="width:${widths[0]}px;text-align:center;${zebra}">${idx + 1}</div><div class="virtual-cell" data-col="1" style="width:${widths[1]}px;${zebra}">${hl(this.dataManager.get(row, 'supplier'))}</div><div class="virtual-cell" data-col="2" style="width:${widths[2]}px;${zebra}">${hl(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" data-col="3" style="width:${widths[3]}px;${zebra}">${hl(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" data-col="4" style="width:${widths[4]}px;${zebra}">${hl(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" data-col="5" style="width:${widths[5]}px;${zebra}">${hl(this.dataManager.get(row, 'assessDate'))}</div><div class="virtual-cell" data-col="6" style="width:${widths[6]}px;${zebra}">${this._statusBadge(st)}</div><div class="virtual-cell" data-col="7" style="width:${widths[7]}px;${zebra}">${hl(this.dataManager.get(row, 'assessor'))}</div><div class="virtual-cell" data-col="8" style="width:${widths[8]}px;${zebra}">${reportInfo.date}${reportInfo.light}</div><div class="virtual-cell" data-col="9" style="width:${widths[9]}px;text-align:center;${zebra}">${hl(this.dataManager.get(row, 'score'))}</div><div class="virtual-cell" data-col="10" style="width:${widths[10]}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${zebra}" title="${Utils.esc(remarks)}">${hl(remarks)}</div><div class="virtual-cell" data-col="11" style="width:${widths[11]}px;${zebra}"><button class="btn" onclick="window.app.openDrawer(${this.dataManager.getAll().indexOf(row)})">安排/编辑</button></div><div class="virtual-cell" data-col="12" style="width:${widths[12]}px;text-align:center;${zebra}"><button class="btn" style="background:#2563eb;color:#fff;font-size:11px;padding:2px 6px;" onclick="window.app.duplicateRow(${this.dataManager.getAll().indexOf(row)})">复制</button></div><div class="virtual-cell" data-col="13" style="width:${widths[13]}px;text-align:center;${zebra}"><button class="btn" style="background:#dc2626;color:#fff;" onclick="window.app.deleteRow(${this.dataManager.getAll().indexOf(row)})">删除</button></div>`;
+        const originalIndex = allData ? allData.indexOf(row) + 1 : idx + 1;
+        const rowIndex = allData ? allData.indexOf(row) : idx;
+        return `<div class="virtual-cell" data-col="0" style="width:${widths[0]}px;text-align:center;${zebra}">${originalIndex}</div><div class="virtual-cell" data-col="1" style="width:${widths[1]}px;${zebra}">${hl(this.dataManager.get(row, 'supplier'))}</div><div class="virtual-cell" data-col="2" style="width:${widths[2]}px;${zebra}">${hl(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" data-col="3" style="width:${widths[3]}px;${zebra}">${hl(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" data-col="4" style="width:${widths[4]}px;${zebra}">${hl(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" data-col="5" style="width:${widths[5]}px;${zebra}">${hl(this.dataManager.get(row, 'assessDate'))}</div><div class="virtual-cell" data-col="6" style="width:${widths[6]}px;${zebra}">${this._statusBadge(st)}</div><div class="virtual-cell" data-col="7" style="width:${widths[7]}px;${zebra}">${hl(this.dataManager.get(row, 'assessor'))}</div><div class="virtual-cell" data-col="8" style="width:${widths[8]}px;${zebra}">${reportInfo.date}${reportInfo.light}</div><div class="virtual-cell" data-col="9" style="width:${widths[9]}px;text-align:center;${zebra}">${hl(this.dataManager.get(row, 'score'))}</div><div class="virtual-cell" data-col="10" style="width:${widths[10]}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${zebra}" title="${Utils.esc(remarks)}">${hl(remarks)}</div><div class="virtual-cell" data-col="11" style="width:${widths[11]}px;${zebra}"><button class="btn" onclick="window.app.openDrawer(${rowIndex})">安排/编辑</button></div><div class="virtual-cell" data-col="12" style="width:${widths[12]}px;text-align:center;${zebra}"><button class="btn" style="background:#2563eb;color:#fff;font-size:11px;padding:2px 6px;" onclick="window.app.duplicateRow(${rowIndex})">复制</button></div><div class="virtual-cell" data-col="13" style="width:${widths[13]}px;text-align:center;${zebra}"><button class="btn" style="background:#dc2626;color:#fff;" onclick="window.app.deleteRow(${rowIndex})">删除</button></div>`;
       }
     });
   }
@@ -3494,9 +3497,9 @@ class ScheduleApp {
       const newRow = {};
       Object.entries(updates).forEach(([k, v]) => this.dataManager.set(newRow, k, v));
       this.dataManager.getAll().push(newRow);
-      this.dataManager._saveToLocalStorage();
+      // 添加新记录后按 Supplier 排序
+      this.dataManager.sortBySupplier();
       await this.dataManager._syncToSupabase();
-      this.dataManager.notify();
     } else {
       const r = this.dataManager.getAll()[idx];
       if (!r) return;
@@ -3889,9 +3892,9 @@ class ScheduleApp {
           }
         }
 
+        // 导入后按 Supplier 排序
+        this.dataManager.sortBySupplier();
         await this.dataManager._syncToSupabase();
-        this.dataManager._saveToLocalStorage();
-        this.dataManager.notify();
         this._initFilters();
         this.showError(`✅ 导入完成！新增 ${added} 条，跳过 ${skipped} 条（已存在）`);
       } catch (e) { this.showError('CSV 导入失败：' + e); }
