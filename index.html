@@ -1421,7 +1421,7 @@ class VirtualScroller {
     el.style.top = 'auto';
     el.style.height = 'auto';
     el.style.minHeight = `${this.options.rowHeight}px`;
-    el.innerHTML = this.options.renderRow(row, index, this.data);
+    el.innerHTML = this.options.renderRow(row, index);
     return el;
   }
 
@@ -1482,7 +1482,7 @@ class VirtualScroller {
     } catch (e) {
       el.style.minWidth = '1700px';
     }
-    el.innerHTML = this.options.renderRow(row, index, this.data);
+    el.innerHTML = this.options.renderRow(row, index);
     return el;
   }
 
@@ -2351,10 +2351,11 @@ class ScheduleApp {
       rowHeight: 44,
       emptyMessage: '没有待分配的工厂',
       emptyIcon: '✅',
-      renderRow: (row, idx, allData) => {
+      renderRow: (row, idx) => {
         const st = String(this.dataManager.get(row, 'status') || '').trim();
-        const originalIndex = allData ? allData.indexOf(row) + 1 : idx + 1;
-        const rowIndex = allData ? allData.indexOf(row) : idx;
+        const allData = this.dataManager.getAll();
+        const originalIndex = allData.indexOf(row) + 1;
+        const rowIndex = allData.indexOf(row);
         return `<div class="virtual-cell" style="width:40px;text-align:center;">${originalIndex}</div><div class="virtual-cell" style="width:160px;">${Utils.esc(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" style="width:60px;">${Utils.esc(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" style="width:60px;">${Utils.esc(this.dataManager.get(row, 'office'))}</div><div class="virtual-cell" style="width:110px;">${Utils.esc(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" style="width:80px;">${this._statusBadge(st)}</div><div class="virtual-cell" style="width:60px;"><button class="btn" onclick="window.app.openDrawer(${rowIndex})">安排</button></div>`;
       }
     });
@@ -2364,7 +2365,7 @@ class ScheduleApp {
       rowHeight: 44,
       emptyMessage: '没有匹配的记录，试试调整筛选条件',
       emptyIcon: '📋',
-      renderRow: (row, idx, allData) => {
+      renderRow: (row, idx) => {
         const st = String(this.dataManager.get(row, 'status') || '').trim();
         const widths = this._getColumnWidths();
         // 计算报告时间和状态灯（只在Preparing Report时显示灯）
@@ -2374,8 +2375,9 @@ class ScheduleApp {
         const remarks = this.dataManager.get(row, 'remarks') || '';
         const zebra = idx % 2 === 0 ? '' : 'background:#f9fafb;';
         const hl = (text) => this._highlightSearch(text);
-        const originalIndex = allData ? allData.indexOf(row) + 1 : idx + 1;
-        const rowIndex = allData ? allData.indexOf(row) : idx;
+        const allData = this.dataManager.getAll();
+        const originalIndex = allData.indexOf(row) + 1;
+        const rowIndex = allData.indexOf(row);
         return `<div class="virtual-cell" data-col="0" style="width:${widths[0]}px;text-align:center;${zebra}">${originalIndex}</div><div class="virtual-cell" data-col="1" style="width:${widths[1]}px;${zebra}">${hl(this.dataManager.get(row, 'supplier'))}</div><div class="virtual-cell" data-col="2" style="width:${widths[2]}px;${zebra}">${hl(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" data-col="3" style="width:${widths[3]}px;${zebra}">${hl(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" data-col="4" style="width:${widths[4]}px;${zebra}">${hl(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" data-col="5" style="width:${widths[5]}px;${zebra}">${hl(this.dataManager.get(row, 'assessDate'))}</div><div class="virtual-cell" data-col="6" style="width:${widths[6]}px;${zebra}">${this._statusBadge(st)}</div><div class="virtual-cell" data-col="7" style="width:${widths[7]}px;${zebra}">${hl(this.dataManager.get(row, 'assessor'))}</div><div class="virtual-cell" data-col="8" style="width:${widths[8]}px;${zebra}">${reportInfo.date}${reportInfo.light}</div><div class="virtual-cell" data-col="9" style="width:${widths[9]}px;text-align:center;${zebra}">${hl(this.dataManager.get(row, 'score'))}</div><div class="virtual-cell" data-col="10" style="width:${widths[10]}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${zebra}" title="${Utils.esc(remarks)}">${hl(remarks)}</div><div class="virtual-cell" data-col="11" style="width:${widths[11]}px;${zebra}"><button class="btn" onclick="window.app.openDrawer(${rowIndex})">安排/编辑</button></div><div class="virtual-cell" data-col="12" style="width:${widths[12]}px;text-align:center;${zebra}"><button class="btn" style="background:#2563eb;color:#fff;font-size:11px;padding:2px 6px;" onclick="window.app.duplicateRow(${rowIndex})">复制</button></div><div class="virtual-cell" data-col="13" style="width:${widths[13]}px;text-align:center;${zebra}"><button class="btn" style="background:#dc2626;color:#fff;" onclick="window.app.deleteRow(${rowIndex})">删除</button></div>`;
       }
     });
