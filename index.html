@@ -1701,7 +1701,7 @@ class CalendarView {
 
   _collectMonthlyData() {
     const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
-    const cacheKey = `${year}-${month}-${this.availOnlyUnassigned}`;
+    const cacheKey = `${year}-${month}`;
     if (this._monthlyCache && this._cacheKey === cacheKey) return this._monthlyCache;
     
     const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0);
@@ -1709,31 +1709,44 @@ class CalendarView {
     const uniqueFactories = new Map();
     const dayMap = new Map();
     
+    // 统计方式与 Assessment 列表一致：有 Available Date 且与当月有交集
+    rows.forEach((row, idx) => {
+      const availStr = this.dataManager.get(row, 'avail');
+      const range = Utils.parseAvailRange(availStr);
+      if (!range.from || !range.to) return;
+
+      const from = Utils.parseISO(range.from);
+      const to = Utils.parseISO(range.to);
+      if (!from || !to) return;
+
+      if (to < firstDay || from > lastDay) return;
+
+      const assessor = String(this.dataManager.get(row, 'assessor') || '').trim();
+      const status = String(this.dataManager.get(row, 'status') || '').trim();
+      const priority = String(this.dataManager.get(row, 'priority') || '').trim();
+
+      if (!uniqueFactories.has(idx)) {
+        uniqueFactories.set(idx, {
+          index: idx,
+          factory: this.dataManager.get(row, 'factory'),
+          fid: this.dataManager.get(row, 'fid'),
+          assessor: assessor,
+          status: status,
+          office: this.dataManager.get(row, 'office') || '',
+          statusClass: this._getFactoryStatusClass(row),
+          availFrom: from,
+          availTo: to,
+          priority: priority
+        });
+      }
+    });
+    
+    // 为每一天填充可用工厂（用于日历格子显示）
     for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
       const date = new Date(d);
       const dateStr = Utils.fmt(date);
       const factories = this._getAvailableFactoriesForDate(date);
       dayMap.set(dateStr, factories);
-      factories.forEach(f => {
-        if (!uniqueFactories.has(f.index)) {
-          const row = rows[f.index];
-          const availStr = this.dataManager.get(row, 'avail');
-          const range = Utils.parseAvailRange(availStr);
-          const priority = String(this.dataManager.get(row, 'priority') || '').trim();
-          uniqueFactories.set(f.index, {
-            index: f.index,
-            factory: f.factory,
-            fid: f.fid,
-            assessor: f.assessor,
-            status: f.status,
-            office: f.office || '',
-            statusClass: this._getFactoryStatusClass(row),
-            availFrom: range.from ? Utils.parseISO(range.from) : null,
-            availTo: range.to ? Utils.parseISO(range.to) : null,
-            priority: priority
-          });
-        }
-      });
     }
     
     this._monthlyCache = { firstDay, lastDay, uniqueFactories, dayMap, rows };
@@ -1879,31 +1892,32 @@ class CalendarView {
     const data = this._collectMonthlyData();
     const allFactories = [...data.uniqueFactories.values()];
     
+    const todo = allFactories.filter(f => {
+      const st = (f.status || '').trim();
+      return st === '' || st === '空白' || st === 'Pending';
+    });
     const assigned = allFactories.filter(f => {
-      const a = (f.assessor || '').trim();
       const st = (f.status || '').trim();
-      return a && a.toLowerCase() !== 'tbd' && (st === 'Planned' || st === 'Done' || st === 'Preparing Report');
+      return st === 'Planned' || st === 'Preparing Report';
     });
-    const pending = allFactories.filter(f => {
-      const a = (f.assessor || '').trim();
+    const done = allFactories.filter(f => {
       const st = (f.status || '').trim();
-      return (!a || a.toLowerCase() === 'tbd') && (st === 'Planned' || st === '' || st === '空白');
+      return st === 'Done';
     });
-    const blank = allFactories.length - assigned.length - pending.length;
     const month = this.currentDate.getMonth();
     
     summaryEl.style.display = 'flex';
     summaryEl.innerHTML = `
       <span class="summary-total">📊 ${month + 1}月共 <b>${allFactories.length}</b> 家工厂可用</span>
       <span class="summary-breakdown">
+        <span class="summary-item clickable" data-filter="todo" title="点击筛选待分配工厂">
+          <span class="summary-dot" style="background:#f59e0b;"></span>待分配: ${todo.length}
+        </span>
         <span class="summary-item clickable" data-filter="assigned" title="点击筛选已分配工厂">
-          <span class="summary-dot" style="background:#22c55e;"></span>已分配: ${assigned.length}
+          <span class="summary-dot" style="background:#3b82f6;"></span>已分配: ${assigned.length}
         </span>
-        <span class="summary-item clickable" data-filter="pending" title="点击筛选待分配工厂">
-          <span class="summary-dot" style="background:#f59e0b;"></span>待分配: ${pending.length}
-        </span>
-        <span class="summary-item clickable" data-filter="blank" title="点击筛选空白工厂">
-          <span class="summary-dot" style="background:#9ca3af;"></span>空白: ${blank}
+        <span class="summary-item clickable" data-filter="done" title="点击筛选已完成工厂">
+          <span class="summary-dot" style="background:#22c55e;"></span>已完成: ${done.length}
         </span>
       </span>
     `;
@@ -1911,35 +1925,30 @@ class CalendarView {
     summaryEl.querySelectorAll('.summary-item.clickable').forEach(item => {
       item.addEventListener('click', () => {
         const filter = item.dataset.filter;
-        this._filterListBySummary(filter, assigned, pending, blank, allFactories);
+        this._filterListBySummary(filter, todo, assigned, done);
       });
     });
   }
 
-  _filterListBySummary(filter, assigned, pending, blank, allFactories) {
+  _filterListBySummary(filter, todo, assigned, done) {
     window.app._switchTab('list');
     window.app.state.q = '';
     document.getElementById('search').value = '';
     
-    if (filter === 'assigned') {
+    if (filter === 'todo') {
+      const indices = todo.map(f => f.index);
+      window.app.state._availIndices = new Set(indices);
+    } else if (filter === 'assigned') {
       const indices = assigned.map(f => f.index);
       window.app.state._availIndices = new Set(indices);
-    } else if (filter === 'pending') {
-      const indices = pending.map(f => f.index);
-      window.app.state._availIndices = new Set(indices);
-    } else if (filter === 'blank') {
-      const blankFactories = allFactories.filter(f => {
-        const a = (f.assessor || '').trim();
-        const st = (f.status || '').trim();
-        return (!a || a.toLowerCase() === 'tbd') && st !== 'Planned' && st !== '' && st !== '空白';
-      });
-      const indices = blankFactories.map(f => f.index);
+    } else if (filter === 'done') {
+      const indices = done.map(f => f.index);
       window.app.state._availIndices = new Set(indices);
     }
     
     window.app.renderAll();
     const month = this.currentDate.getMonth() + 1;
-    const labels = { assigned: '已分配', pending: '待分配', blank: '空白' };
+    const labels = { todo: '待分配', assigned: '已分配', done: '已完成' };
     window.app.showError(`✅ 已筛选${month}月${labels[filter] || filter}工厂`);
   }
 
@@ -3270,30 +3279,31 @@ class ScheduleApp {
 
     const allFactories = [...uniqueFactories.values()];
 
+    const todo = allFactories.filter(f => {
+      const st = (f.status || '').trim();
+      return st === '' || st === '空白';
+    });
     const assigned = allFactories.filter(f => {
-      const a = (f.assessor || '').trim();
       const st = (f.status || '').trim();
-      return a && a.toLowerCase() !== 'tbd' && (st === 'Planned' || st === 'Done' || st === 'Preparing Report');
+      return st === 'Planned' || st === 'Preparing Report';
     });
-    const pending = allFactories.filter(f => {
-      const a = (f.assessor || '').trim();
+    const done = allFactories.filter(f => {
       const st = (f.status || '').trim();
-      return (!a || a.toLowerCase() === 'tbd') && (st === 'Planned' || st === '' || st === '空白');
+      return st === 'Done';
     });
-    const blank = allFactories.length - assigned.length - pending.length;
 
     summaryEl.style.display = 'flex';
     summaryEl.innerHTML = `
       <span class="summary-total">📊 ${month + 1}月共 <b>${allFactories.length}</b> 家工厂可用</span>
       <span class="summary-breakdown">
+        <span class="summary-item clickable" data-filter="todo" title="点击筛选待分配工厂">
+          <span class="summary-dot" style="background:#f59e0b;"></span>待分配: ${todo.length}
+        </span>
         <span class="summary-item clickable" data-filter="assigned" title="点击筛选已分配工厂">
-          <span class="summary-dot" style="background:#22c55e;"></span>已分配: ${assigned.length}
+          <span class="summary-dot" style="background:#3b82f6;"></span>已分配: ${assigned.length}
         </span>
-        <span class="summary-item clickable" data-filter="pending" title="点击筛选待分配工厂">
-          <span class="summary-dot" style="background:#f59e0b;"></span>待分配: ${pending.length}
-        </span>
-        <span class="summary-item clickable" data-filter="blank" title="点击筛选空白工厂">
-          <span class="summary-dot" style="background:#9ca3af;"></span>空白: ${blank}
+        <span class="summary-item clickable" data-filter="done" title="点击筛选已完成工厂">
+          <span class="summary-dot" style="background:#22c55e;"></span>已完成: ${done.length}
         </span>
       </span>
     `;
@@ -3301,31 +3311,26 @@ class ScheduleApp {
     summaryEl.querySelectorAll('.summary-item.clickable').forEach(item => {
       item.addEventListener('click', () => {
         const filter = item.dataset.filter;
-        this._filterListByAvailSummary(filter, assigned, pending, blank, allFactories);
+        this._filterListByAvailSummary(filter, todo, assigned, done);
       });
     });
   }
 
-  _filterListByAvailSummary(filter, assigned, pending, blank, allFactories) {
+  _filterListByAvailSummary(filter, todo, assigned, done) {
     this.state.q = '';
     document.getElementById('search').value = '';
 
-    if (filter === 'assigned') {
+    if (filter === 'todo') {
+      this.state._availIndices = new Set(todo.map(f => f.index));
+    } else if (filter === 'assigned') {
       this.state._availIndices = new Set(assigned.map(f => f.index));
-    } else if (filter === 'pending') {
-      this.state._availIndices = new Set(pending.map(f => f.index));
-    } else if (filter === 'blank') {
-      const blankFactories = allFactories.filter(f => {
-        const a = (f.assessor || '').trim();
-        const st = (f.status || '').trim();
-        return (!a || a.toLowerCase() === 'tbd') && st !== 'Planned' && st !== '' && st !== '空白';
-      });
-      this.state._availIndices = new Set(blankFactories.map(f => f.index));
+    } else if (filter === 'done') {
+      this.state._availIndices = new Set(done.map(f => f.index));
     }
 
     this.renderAll();
     const monthLabel = new Date().getMonth() + 1;
-    const labels = { assigned: '已分配', pending: '待分配', blank: '空白' };
+    const labels = { todo: '待分配', assigned: '已分配', done: '已完成' };
     this.showError(`✅ 已筛选${monthLabel}月${labels[filter] || filter}工厂`);
   }
 
