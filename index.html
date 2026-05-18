@@ -327,7 +327,6 @@
       <div id="pendingStats" class="muted" style="margin-top:6px;"></div><div id="pendingTable" class="virtual-scroll-container" style="margin-top:10px; max-height:280px; overflow-y:auto; overflow-x:hidden;"><div class="virtual-header" id="pendingHeader"><div class="virtual-cell" style="width:40px;text-align:center;">#</div><div class="virtual-cell" style="width:160px;">Factory</div><div class="virtual-cell" style="width:60px;">FID</div><div class="virtual-cell" style="width:110px;">Available</div><div class="virtual-cell" style="width:80px;">Status</div><div class="virtual-cell" style="width:60px;">操作</div></div></div></div>
       <div class="card risk-card" id="riskCard"><h3 style="display:inline-block;">风险 & 冲突提醒</h3><span class="help-icon" title="功能说明：
 🔴 超负荷 - Assessor本周Planned≥2条
-🟡 接近上限 - Assessor本周Planned=1条
 🔴 下周超负荷 - Assessor下周Planned≥2条
 🔴 日期冲突 - 同一天同一人多条安排
 🔴 过期任务 - Planned状态但日期已过去
@@ -339,7 +338,7 @@
       <h3 style="margin-bottom:4px;">Assessment 列表（报告时间状态灯：🟢时间充裕 🟡剩3天内 🟤剩1天 🔴已超期）</h3>
       <div id="listAvailSummary" class="avail-summary" style="margin-bottom:8px;"></div>
       <div style="margin-bottom:8px;"><button id="btnExportAssessment" class="btn" title="导出当前筛选的Assessment列表">📊 导出列表</button> <button id="btnAddFactory" class="btn primary">➕ 添加工厂</button></div>
-      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell sortable" data-sort="supplier" style="width:350px;">Vendor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="factory" style="width:380px;">Factory <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="fid" style="width:80px;">FID <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell sortable" data-sort="assessDate" style="width:110px;">Assess Date <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="status" style="width:100px;">Status <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="assessor" style="width:180px;">Assessor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="reportDate" style="width:150px;">报告时间(7工作日) <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="score" style="width:70px;text-align:center;">Score <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div></div></div>
+      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell sortable" data-sort="supplier" style="width:350px;">Vendor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="factory" style="width:380px;">Factory <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="fid" style="width:80px;">FID <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell sortable" data-sort="assessDate" style="width:110px;">Assess Date <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="status" style="width:100px;">Status <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="assessor" style="width:180px;">Assessor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="reportDate" style="width:150px;">报告时间(10工作日) <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="score" style="width:70px;text-align:center;">Score <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div></div></div>
     </div>
   </section>
 
@@ -433,7 +432,7 @@
       <div class="field" style="margin-top:12px;"><label>Assessor Name</label><select id="fAssessor"></select></div>
       <div class="field"><label>Assess Date</label><div style="display:flex;gap:8px;"><input id="fDate" type="text" placeholder="YYYY-MM-DD" style="flex:1;" /><button id="btnDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
       <div class="field"><label>Status</label><select id="fStatus"><option value="空白">空白</option><option value="Planned">Planned</option><option value="Pending">Pending</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select></div>
-      <div class="field"><label>报告时间(7工作日)</label><div style="display:flex;gap:8px;"><input id="fReportDate" type="text" placeholder="YYYY-MM-DD（留空则自动计算）" style="flex:1;" /><button id="btnReportDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
+      <div class="field"><label>报告时间(10工作日)</label><div style="display:flex;gap:8px;"><input id="fReportDate" type="text" placeholder="YYYY-MM-DD（留空则自动计算）" style="flex:1;" /><button id="btnReportDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
       <div id="scoreWrap" class="field" style="display:block;">
         <label>Score（可编辑）</label>
         <input id="fScore" type="number" step="0.1" placeholder="例如 85" />
@@ -3074,7 +3073,7 @@ class ScheduleApp {
 
   // 计算报告时间和状态灯（只在Preparing Report时显示灯）
   _calcReportDueInfo(reportDateStr, assessDateStr, status) {
-    // 优先使用已设置的报告时间，否则计算（Assess Date + 7工作日）
+    // 优先使用已设置的报告时间，否则计算（Assess Date 后第10个工作日，不含评估当天）
     let reportDate = null;
     
     if (reportDateStr && reportDateStr.trim()) {
@@ -3085,10 +3084,11 @@ class ScheduleApp {
     if (!reportDate && assessDateStr && assessDateStr.trim()) {
       const assessDate = Utils.parseISO(assessDateStr);
       if (assessDate) {
-        // 计算+7个工作日（排除周末和法定节假日，包含调休上班日）
+        // 计算评估日期后第10个工作日（不包含评估当天）
+        // 例如：评估日期是周一，则周二为第1个工作日，第10个工作日是下周五
         let workDays = 0;
         reportDate = new Date(assessDate);
-        while (workDays < 7) {
+        while (workDays < 10) {
           reportDate.setDate(reportDate.getDate() + 1);
           const dayOfWeek = reportDate.getDay();
           const dateStr = `${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}-${String(reportDate.getDate()).padStart(2, '0')}`;
@@ -3253,6 +3253,16 @@ class ScheduleApp {
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month + 1, 0);
     const rows = this.dataManager.getAll();
+    
+    // 统计总工厂数（所有记录）
+    const totalFactories = rows.length;
+    
+    // 统计已完成工厂数（所有状态为 Done 的记录）
+    const totalDone = rows.filter(row => {
+      const st = String(this.dataManager.get(row, 'status') || '').trim();
+      return st === 'Done';
+    }).length;
+    
     const uniqueFactories = new Map();
 
     rows.forEach((row, idx) => {
@@ -3294,18 +3304,17 @@ class ScheduleApp {
 
     summaryEl.style.display = 'flex';
     summaryEl.innerHTML = `
-      <span class="summary-total">📊 ${month + 1}月共 <b>${allFactories.length}</b> 家工厂可用</span>
-      <span class="summary-breakdown">
-        <span class="summary-item clickable" data-filter="todo" title="点击筛选待分配工厂">
-          <span class="summary-dot" style="background:#f59e0b;"></span>待分配: ${todo.length}
-        </span>
-        <span class="summary-item clickable" data-filter="assigned" title="点击筛选已分配工厂">
-          <span class="summary-dot" style="background:#3b82f6;"></span>已分配: ${assigned.length}
-        </span>
-        <span class="summary-item clickable" data-filter="done" title="点击筛选已完成工厂">
-          <span class="summary-dot" style="background:#22c55e;"></span>已完成: ${done.length}
-        </span>
-      </span>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:15px;font-weight:700;color:#1e40af;">
+          📊 总工厂: <b>${totalFactories}</b> | 已完成: <b>${totalDone}</b>
+        </div>
+        <div style="font-size:13px;color:#4b5563;border-top:1px dashed #d1d5db;padding-top:6px;">
+          <span style="font-weight:600;">${month + 1}月可用: ${allFactories.length}</span>
+          <span style="margin-left:12px;"><span class="summary-dot" style="background:#f59e0b;"></span>待分配: ${todo.length}</span>
+          <span style="margin-left:8px;"><span class="summary-dot" style="background:#3b82f6;"></span>已分配: ${assigned.length}</span>
+          <span style="margin-left:8px;"><span class="summary-dot" style="background:#22c55e;"></span>已完成: ${done.length}</span>
+        </div>
+      </div>
     `;
 
     summaryEl.querySelectorAll('.summary-item.clickable').forEach(item => {
@@ -3391,7 +3400,6 @@ class ScheduleApp {
   _renderRiskBox() {
     const wl = this.workloadCalc.calculate(this.dataManager.getAll());
     const over = wl.filter(x => x.load === 'red');
-    const near = wl.filter(x => x.load === 'yellow');
     const nextOver = wl.filter(x => x.nextLoad === 'red');
 
     const conflicts = this._detectDateConflicts();
@@ -3401,11 +3409,10 @@ class ScheduleApp {
     const missingScore = this._detectMissingScore();
 
     let html = '';
-    const hasAnyIssue = over.length || near.length || nextOver.length || conflicts.length || overdue.length || unassigned.length || availConflicts.length || missingScore.length;
+    const hasAnyIssue = over.length || nextOver.length || conflicts.length || overdue.length || unassigned.length || availConflicts.length || missingScore.length;
     if (!hasAnyIssue) html = `<span class="badge green">无风险或冲突</span>`;
     else {
       if (over.length) html += `<div style="margin-bottom:8px;"><span class="badge red">超负荷</span> ` + over.map(x => `${Utils.esc(x.assessor)}(Planned:${x.plannedThis})`).join('，') + `</div>`;
-      if (near.length) html += `<div style="margin-bottom:8px;"><span class="badge yellow">接近上限</span> ` + near.map(x => `${Utils.esc(x.assessor)}(Planned:${x.plannedThis})`).join('，') + `</div>`;
       if (nextOver.length) html += `<div style="margin-bottom:8px;"><span class="badge red">下周超负荷</span> ` + nextOver.map(x => `${Utils.esc(x.assessor)}(下周Planned:${x.plannedNext})`).join('，') + `</div>`;
       if (conflicts.length) {
         html += `<div style="margin-bottom:8px;"><span class="badge red">日期冲突</span> ` + conflicts.map(c => `${Utils.esc(c.assessor)} @ ${c.date} (${c.count}条)`).join('，') + `</div>`;
@@ -3857,7 +3864,7 @@ class ScheduleApp {
     }
 
     // 构建数据
-    const headers = ['编号', 'Vendor', 'Factory', 'FID', 'Available', 'Assess Date', 'Status', 'Assessor', '报告时间(7工作日)', 'Score', '备注'];
+    const headers = ['编号', 'Vendor', 'Factory', 'FID', 'Available', 'Assess Date', 'Status', 'Assessor', '报告时间(10工作日)', 'Score', '备注'];
     const data = [];
     
     rows.forEach((row, idx) => {
