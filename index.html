@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
   <title>Oi Shanghai QC Team - Quality Assessment 排期看板</title>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root{--bg:#f6f7fb;--card:#fff;--muted:#6b7280;--border:#e5e7eb;--blue:#2563eb;--red:#dc2626;--yellow:#f59e0b;--green:#16a34a;--gray:#9ca3af;}
     *{box-sizing:border-box;}
@@ -529,11 +529,18 @@ window.supabaseClient = null;
 try {
   if (window.supabase && typeof window.supabase.createClient === 'function') {
     window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('[Supabase] ✅ CDN 加载成功，客户端已创建');
   } else if (typeof createClient === 'function') {
     window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('[Supabase] ✅ createClient 已找到，客户端已创建');
+  } else {
+    console.warn('[Supabase] ❌ 未找到 createClient，CDN 加载异常');
+    console.log('[Supabase] window.supabase 类型:', typeof window.supabase);
+    console.log('[Supabase] window.supabase 内容:', Object.keys(window.supabase || {}));
   }
 } catch (e) {
   window.supabaseClient = null;
+  console.error('[Supabase] ❌ 初始化异常:', e);
 }
 
 // 为兼容性，将 supabase 指向 window.supabaseClient
@@ -918,11 +925,13 @@ class SupabaseDataManager {
     this._updateSyncStatus('syncing', '正在连接云端...');
 
     try {
+      console.log('[Supabase] 开始测试连接...');
       // 测试连接（带超时，防止 CORS 等问题导致永远 pending）
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('连接超时，请检查 Supabase CORS 设置')), 10000)
       );
       const testPromise = supabase.from('assessments').select('count', { count: 'exact', head: true });
+      console.log('[Supabase] 请求已发出，等待响应...');
       const { data: testData, error: testError } = await Promise.race([testPromise, timeoutPromise]);
 
       if (testError) {
