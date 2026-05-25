@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
   <title>Oi Shanghai QC Team - Quality Assessment 排期看板</title>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     :root{--bg:#f6f7fb;--card:#fff;--muted:#6b7280;--border:#e5e7eb;--blue:#2563eb;--red:#dc2626;--yellow:#f59e0b;--green:#16a34a;--gray:#9ca3af;}
     *{box-sizing:border-box;}
@@ -918,8 +918,12 @@ class SupabaseDataManager {
     this._updateSyncStatus('syncing', '正在连接云端...');
 
     try {
-      // 测试连接
-      const { data: testData, error: testError } = await supabase.from('assessments').select('count', { count: 'exact', head: true });
+      // 测试连接（带超时，防止 CORS 等问题导致永远 pending）
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('连接超时，请检查 Supabase CORS 设置')), 10000)
+      );
+      const testPromise = supabase.from('assessments').select('count', { count: 'exact', head: true });
+      const { data: testData, error: testError } = await Promise.race([testPromise, timeoutPromise]);
 
       if (testError) {
         console.error('Supabase 连接测试失败:', testError);
