@@ -311,6 +311,7 @@
       <button id="btnSelectBackupFolder" class="btn" title="选择文件夹后每5分钟自动备份">📁 选择备份文件夹</button>
       <span id="backupStatus" class="muted" style="font-size:11px;"></span>
       <div id="syncStatus" style="font-size:11px;margin-left:auto;">🔄 正在连接...</div>
+      <button id="btnRetrySync" class="btn" style="display:none;font-size:10px;margin-left:4px;" onclick="window.app?.dataManager?.retrySync()">🔄 重试</button>
     </div>
     <div class="row" style="margin-top:4px;">
       <div class="muted" style="font-size:10px;">⌨️ 快捷键：Esc关闭 | Ctrl+S保存 | Ctrl+F搜索 | ←→翻月 | T回今天 | 1/2切换视图 | Ctrl+N添加Assessor</div>
@@ -926,31 +927,37 @@ class SupabaseDataManager {
 
     try {
       console.log('[Supabase] 开始测试连接...');
-      // 测试连接（带超时，防止 CORS 等问题导致永远 pending）
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('连接超时，请检查 Supabase CORS 设置')), 10000)
+
+      // 超时辅助：5秒后必定返回，不依赖 Supabase 请求是否结束
+      const timeoutResult = () => new Promise(resolve => 
+        setTimeout(() => resolve({ data: null, error: { message: 'TIMEOUT', name: 'TimeoutError' } }), 5000)
       );
-      const testPromise = supabase.from('assessments').select('count', { count: 'exact', head: true });
-      console.log('[Supabase] 请求已发出，等待响应...');
-      const { data: testData, error: testError } = await Promise.race([testPromise, timeoutPromise]);
 
-      if (testError) {
-        console.error('Supabase 连接测试失败:', testError);
-        this._updateSyncStatus('error', '连接失败: ' + testError.message);
+      // 测试连接（用 Promise.race 确保 5 秒内一定能继续执行）
+      const testResult = await Promise.race([
+        supabase.from('assessments').select('count', { count: 'exact', head: true }),
+        timeoutResult()
+      ]);
+
+      if (testResult.error) {
+        console.error('Supabase 连接测试失败:', testResult.error);
+        this._updateSyncStatus('error', '连接超时 — 网络限制，已回退本地模式');
         return;
       }
 
-      // 从 Supabase 加载数据
-      const { data, error } = await supabase
-        .from('assessments')
-        .select('*')
-        .order('id', { ascending: true });
+      // 从 Supabase 加载数据（同样用 Promise.race）
+      const dataResult = await Promise.race([
+        supabase.from('assessments').select('*').order('id', { ascending: true }),
+        timeoutResult()
+      ]);
 
-      if (error) {
-        console.error('从 Supabase 加载数据失败:', error);
-        this._updateSyncStatus('error', '云端连接失败: ' + error.message);
+      if (dataResult.error) {
+        console.error('从 Supabase 加载数据失败:', dataResult.error);
+        this._updateSyncStatus('error', '加载超时 — 网络限制，已回退本地模式');
         return;
       }
+
+      const data = dataResult.data;
 
       if (data && data.length > 0) {
         const remoteRows = data.map(item => item.data);
@@ -1188,26 +1195,41 @@ class SupabaseDataManager {
   _updateSyncStatus(status, message) {
     const statusEl = document.getElementById('syncStatus');
     if (!statusEl) return;
+    const retryBtn = document.getElementById('btnRetrySync');
     
     switch (status) {
       case 'connected':
         statusEl.textContent = '☁️ ' + (message || '已连接到云端');
         statusEl.style.color = '#16a34a';
+        if (retryBtn) retryBtn.style.display = 'none';
         break;
       case 'local':
         statusEl.textContent = '💻 ' + (message || '本地模式');
         statusEl.style.color = '#6b7280';
+        if (retryBtn) retryBtn.style.display = 'none';
         break;
       case 'error':
         statusEl.textContent = '⚠️ ' + (message || '连接失败');
         statusEl.style.color = '#dc2626';
+        if (retryBtn) retryBtn.style.display = 'inline-block';
         break;
       case 'syncing':
         statusEl.innerHTML = '<span class="syncing-icon">🔄</span> ' + (message || '同步中...');
         statusEl.style.color = '#2563eb';
+        if (retryBtn) retryBtn.style.display = 'none';
         break;
       default:
         statusEl.textContent = message || '';
+    }
+  }
+
+  // 手动重试同步
+  async retrySync() {
+    this._updateSyncStatus('syncing', '正在重试连接...');
+    await this.init();
+    if (this.initialized) {
+      this.sortBySupplier();
+      this.notify();
     }
   }
 
