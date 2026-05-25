@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
   <title>Oi Shanghai QC Team - Quality Assessment 排期看板</title>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root{--bg:#f6f7fb;--card:#fff;--muted:#6b7280;--border:#e5e7eb;--blue:#2563eb;--red:#dc2626;--yellow:#f59e0b;--green:#16a34a;--gray:#9ca3af;}
     *{box-sizing:border-box;}
@@ -339,7 +339,7 @@
       <h3 style="margin-bottom:4px;">Assessment 列表（报告时间状态灯：🟢时间充裕 🟡剩3天内 🟤剩1天 🔴已超期）</h3>
       <div id="listAvailSummary" class="avail-summary" style="margin-bottom:8px;"></div>
       <div style="margin-bottom:8px;"><button id="btnExportAssessment" class="btn" title="导出当前筛选的Assessment列表">📊 导出列表</button> <button id="btnAddFactory" class="btn primary">➕ 添加工厂</button></div>
-      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell sortable" data-sort="supplier" style="width:350px;">Vendor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="factory" style="width:380px;">Factory <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="fid" style="width:80px;">FID <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell sortable" data-sort="assessDate" style="width:110px;">Assess Date <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="status" style="width:100px;">Status <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="assessor" style="width:180px;">Assessor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="reportDate" style="width:150px;">报告时间(10工作日) <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="score" style="width:70px;text-align:center;">Score <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div></div></div>
+      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell sortable" data-sort="supplier" style="width:350px;">Vendor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="factory" style="width:380px;">Factory <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="fid" style="width:80px;">FID <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell sortable" data-sort="assessDate" style="width:110px;">Assess Date <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="status" style="width:100px;">Status <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="assessor" style="width:180px;">Assessor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="reportDate" style="width:150px;">报告时间(7工作日) <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="score" style="width:70px;text-align:center;">Score <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div></div></div>
     </div>
   </section>
 
@@ -433,7 +433,7 @@
       <div class="field" style="margin-top:12px;"><label>Assessor Name</label><select id="fAssessor"></select></div>
       <div class="field"><label>Assess Date</label><div style="display:flex;gap:8px;"><input id="fDate" type="text" placeholder="YYYY-MM-DD" style="flex:1;" /><button id="btnDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
       <div class="field"><label>Status</label><select id="fStatus"><option value="空白">空白</option><option value="Planned">Planned</option><option value="Pending">Pending</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select></div>
-      <div class="field"><label>报告时间(10工作日)</label><div style="display:flex;gap:8px;"><input id="fReportDate" type="text" placeholder="YYYY-MM-DD（留空则自动计算）" style="flex:1;" /><button id="btnReportDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
+      <div class="field"><label>报告时间(7工作日)</label><div style="display:flex;gap:8px;"><input id="fReportDate" type="text" placeholder="YYYY-MM-DD（留空则自动计算）" style="flex:1;" /><button id="btnReportDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
       <div id="scoreWrap" class="field" style="display:block;">
         <label>Score（可编辑）</label>
         <input id="fScore" type="number" step="0.1" placeholder="例如 85" />
@@ -3946,7 +3946,7 @@ class ScheduleApp {
     }
 
     // 构建数据
-    const headers = ['编号', 'Vendor', 'Factory', 'FID', 'Available', 'Assess Date', 'Status', 'Assessor', '报告时间(10工作日)', 'Score', '备注'];
+    const headers = ['编号', 'Vendor', 'Factory', 'FID', 'Available', 'Assess Date', 'Status', 'Assessor', '报告时间(7工作日)', 'Score', '备注'];
     const data = [];
     
     rows.forEach((row, idx) => {
