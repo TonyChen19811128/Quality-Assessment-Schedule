@@ -1,0 +1,4370 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
+  <title>Oi Shanghai QC Team - Quality Assessment 排期看板</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root{--bg:#f6f7fb;--card:#fff;--muted:#6b7280;--border:#e5e7eb;--blue:#2563eb;--red:#dc2626;--yellow:#f59e0b;--green:#16a34a;--gray:#9ca3af;}
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#111827;}
+    header{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.06);padding:4px 0;}
+    .wrap{max-width:100%;margin:0 auto;padding:6px 24px;}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+    .brand{font-weight:800;font-size:22px;}
+    .tabs{display:flex;gap:10px;margin-top:0;margin-left:0;}
+    .tabs button{border:1px solid var(--border);background:#fff;padding:8px 10px;border-radius:10px;cursor:pointer;}
+    .tabs button.active{background:#111827;color:#fff;border-color:#111827;}
+    .btn{border:1px solid var(--border);background:#fff;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;line-height:1.2;}
+    .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+    .btn.danger{background:var(--red);color:#fff;border-color:var(--red);}
+    .grid{display:grid;grid-template-columns:minmax(300px,1.2fr) minmax(350px,1.3fr) minmax(250px,0.8fr);gap:16px;}
+    @media (max-width:1200px){.grid{grid-template-columns:1fr 1fr;}}
+    @media (max-width:800px){.grid{grid-template-columns:1fr;}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;}
+    h3{margin:0 0 10px 0;font-size:16px;}
+    .muted{color:var(--muted);font-size:12px;}
+    .scrollBox{position:relative;overflow:auto;}
+    .table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+    .table th,.table td{padding:8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+    .table th{text-align:left;font-size:12px;color:var(--muted);background:#fafafa;position:sticky;top:0;z-index:3;}
+    .table tr:hover td{background:#fbfdff;}
+    .badge{display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;border:1px solid var(--border);line-height:1.2;} 
+    .badge.blue{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;}
+    .badge.gray{background:#f3f4f6;color:#374151;border-color:#e5e7eb;}
+    .badge.red{background:#fef2f2;color:#b91c1c;border-color:#fecaca;}
+    .badge.yellow{background:#fffbeb;color:#92400e;border-color:#fde68a;}
+    .badge.green{background:#ecfdf5;color:#065f46;border-color:#a7f3d0;}
+    .badge.orange{background:#fff7ed;color:#c2410c;border-color:#fed7aa;}
+    .help-icon{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:#e5e7eb;color:#6b7280;font-size:12px;cursor:help;margin-left:8px;vertical-align:middle;}
+    .drawer{position:fixed;top:0;right:-440px;width:440px;height:100%;background:#fff;border-left:1px solid var(--border);box-shadow:-10px 0 30px rgba(0,0,0,.08);transition:right .25s ease;z-index:60;}
+    .drawer.open{right:0;}
+    .drawer .hd{padding:14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+    .drawer .bd{padding:14px;overflow:auto;height:calc(100% - 58px - 70px);}
+    .field{margin:10px 0;}
+    .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+    .field input,.field select{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--border);}
+    .twoCol{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    #errorBox{display:none;margin-top:10px;padding:10px;border:1px solid #fecaca;background:#fef2f2;border-radius:12px;color:#991b1b;font-size:12px;white-space:pre-wrap;}
+    
+    /* 虚拟滚动样式 */
+    .virtual-scroll-container { position: relative; overflow: auto; max-height: 420px; }
+    .virtual-scroll-container.no-scroll { overflow: visible; max-height: none; }
+    .virtual-scroll-container.no-scroll .virtual-scroll-content { height: auto !important; }
+    .virtual-scroll-container.no-scroll .virtual-row { position: relative; top: auto !important; height: auto !important; min-height: 28px; }
+    .virtual-scroll-content { position: relative; }
+    .virtual-row { position: absolute; left: 0; right: 0; display: flex; align-items: center; border-bottom: 1px solid var(--border); background: #fff; }
+    .virtual-row:hover { background: #fbfdff; }
+    .virtual-cell { flex: none; padding: 4px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; box-sizing: border-box; }
+    .virtual-header { display: flex; font-weight: 600; font-size: 11px; color: var(--muted); background: #fafafa; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); }
+    .virtual-header .virtual-cell { background: #fafafa; position: relative; user-select: none; }
+    
+    /* 列宽调整手柄 */
+    .virtual-header .virtual-cell::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      cursor: col-resize;
+      background: #e5e7eb;
+      transition: background 0.2s;
+      z-index: 100;
+    }
+    .virtual-header .virtual-cell:hover::after {
+      background: var(--blue);
+      opacity: 0.5;
+    }
+    .virtual-header .virtual-cell.resizing::after {
+      background: var(--blue);
+      opacity: 0.8;
+    }
+    
+    /* 日历视图样式 - 优化卡片显示 */
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+    .calendar-nav { display: flex; gap: 10px; }
+    .calendar-month { font-size: 20px; font-weight: bold; }
+    .calendar-grid { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; }
+    .calendar-weekdays { display: grid; grid-template-columns: repeat(7, minmax(100px, 1fr)); background: #f9fafb; border-bottom: 1px solid var(--border); min-width: 700px; }
+    .calendar-weekday { padding: 12px; text-align: center; font-weight: 600; font-size: 14px; color: var(--muted); }
+    .calendar-days { display: grid; grid-template-columns: repeat(7, minmax(100px, 1fr)); min-width: 700px; }
+    .calendar-day { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 8px; min-height: 80px; vertical-align: top; background: white; transition: background 0.2s; display: flex; flex-direction: column; }
+    .calendar-day:hover { background: #f9fafb; }
+    .calendar-day.other-month { background: #f9fafb; color: var(--muted); }
+    .calendar-day.today { background: #eff6ff; }
+    .calendar-day-number { font-size: 14px; font-weight: 600; margin-bottom: 8px; text-align: right; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+    .calendar-events { flex: 1; overflow-y: auto; overflow-x: hidden; max-height: 90px; }
+    .calendar-event { background: #e0e7ff; margin: 3px 0; padding: 4px 6px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s; word-break: break-word; white-space: normal; line-height: 1.4; }
+    .calendar-event:hover { background: #c7d2fe; transform: scale(1.01); }
+    .calendar-event.planned { background: #dbeafe; border-left: 3px solid var(--blue); }
+    .calendar-event.done { background: #d1fae5; border-left: 3px solid var(--green); }
+    .calendar-event.pending { background: #fff7ed; border-left: 3px solid #f97316; }
+    .calendar-event.preparing { background: #fed7aa; border-left: 3px solid var(--yellow); }
+    .calendar-event.blank { background: #f3f4f6; border-left: 3px solid var(--gray); }
+    .calendar-event .event-factory { font-weight: 600; font-size: 11px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .calendar-event .event-detail { font-size: 10px; color: #4b5563; display: flex; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
+    .calendar-event .event-assessor { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .calendar-event .event-status { flex-shrink: 0; }
+    /* 可用窗口模式下的工厂列表样式 */
+    .calendar-event.avail-factory { background: #f0fdf4; border-left: 2px solid #22c55e; padding: 2px 4px; margin: 1px 0; font-size: 10px; }
+    .calendar-event.avail-factory:hover { background: #dcfce7; }
+    .calendar-event.avail-factory .factory-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .calendar-event.avail-factory .factory-fid { font-size: 9px; color: #6b7280; }
+    .avail-header { background: #e5e7eb; padding: 2px 4px; margin: 2px 0; border-radius: 3px; font-size: 10px; font-weight: 600; text-align: center; }
+    .calendar-legend { display: flex; gap: 16px; margin-top: 16px; padding: 12px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .legend-color { width: 16px; height: 16px; border-radius: 3px; }
+    .search-input { min-width: 280px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 14px; }
+    
+    /* 月度汇总行 */
+    .avail-summary { display: flex; gap: 16px; padding: 10px 14px; margin-bottom: 12px; background: linear-gradient(135deg, #eff6ff, #f0fdf4); border: 1px solid #bfdbfe; border-radius: 10px; font-size: 13px; flex-wrap: wrap; align-items: center; }
+    .avail-summary .summary-total { font-weight: 700; font-size: 15px; color: #1e40af; }
+    .avail-summary .summary-breakdown { display: flex; gap: 12px; flex-wrap: wrap; }
+    .avail-summary .summary-item { display: flex; align-items: center; gap: 4px; }
+    .avail-summary .summary-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    
+    /* 工厂时间线面板 */
+    .factory-timeline { margin-top: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .factory-timeline-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f9fafb; border-bottom: 1px solid var(--border); }
+    .factory-timeline-title { font-weight: 700; font-size: 14px; }
+    .factory-timeline-body { max-height: 360px; overflow-y: auto; overflow-x: hidden; }
+    .timeline-row { display: flex; align-items: center; padding: 6px 14px; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.15s; min-height: 40px; }
+    .timeline-row:hover { background: #f8fafc; }
+    .timeline-row.highlight { background: #eff6ff !important; }
+    .timeline-factory-info { width: 200px; flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+    .timeline-factory-name { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .timeline-factory-fid { font-size: 10px; color: var(--muted); }
+    .timeline-priority-star { color: #f59e0b; font-size: 11px; flex-shrink: 0; }
+    .timeline-bar-container { flex: 1; position: relative; height: 20px; margin-left: 10px; }
+    .timeline-bar-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #f3f4f6; border-radius: 4px; }
+    .timeline-bar-fill { position: absolute; top: 0; bottom: 0; border-radius: 4px; transition: opacity 0.15s; }
+    .timeline-bar-fill.assigned { background: #22c55e; opacity: 0.7; }
+    .timeline-bar-fill.pending { background: #f59e0b; opacity: 0.7; }
+    .timeline-bar-fill.blank { background: #9ca3af; opacity: 0.5; }
+    .timeline-bar-label { position: absolute; top: 0; bottom: 0; left: 4px; display: flex; align-items: center; font-size: 10px; color: #374151; white-space: nowrap; }
+    .timeline-week-markers { display: flex; position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+    .timeline-week-marker { flex: 1; border-right: 1px dashed #e5e7eb; }
+    .timeline-week-labels { display: flex; margin-left: 210px; margin-bottom: 4px; padding: 0 14px; }
+    .timeline-week-label { flex: 1; font-size: 10px; color: var(--muted); text-align: center; }
+    
+    /* 日历格子高亮 */
+    .calendar-day.highlight-avail { background: #fef3c7 !important; border: 2px solid #f59e0b !important; }
+    
+    /* 周末/节假日样式 */
+    .calendar-day.weekend { background: #fef2f2; }
+    .calendar-day.weekend .calendar-day-number { color: #dc2626; }
+    .calendar-day.holiday { background: #fef2f2; }
+    .holiday-badge { display: inline-block; font-size: 9px; background: #fecaca; color: #991b1b; padding: 1px 4px; border-radius: 3px; margin-left: 4px; }
+    
+    /* 可用工厂浮层弹窗 */
+    .avail-popup { display: none; position: fixed; z-index: 80; background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.15); padding: 12px; min-width: 240px; max-width: 320px; max-height: 300px; overflow-y: auto; }
+    .avail-popup.show { display: block; }
+    .avail-popup-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    .avail-popup-item:hover { background: #f3f4f6; }
+    .avail-popup-item .popup-factory { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .avail-popup-item .popup-status { font-size: 10px; flex-shrink: 0; margin-left: 8px; }
+    .avail-popup-close { float: right; cursor: pointer; font-size: 16px; color: var(--muted); background: none; border: none; padding: 0 4px; line-height: 1; }
+    .avail-popup-close:hover { color: #111827; }
+    
+    /* 时间线搜索框 */
+    .timeline-search { width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; margin-right: 8px; }
+    .timeline-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid #f3f4f6; flex-wrap: wrap; }
+    .timeline-toolbar label { font-size: 11px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+    
+    /* 时间线颜色增强 */
+    .timeline-bar-fill.assigned { background: #16a34a; border-left: 2px solid #15803d; }
+    .timeline-bar-fill.pending { background: #d97706; border-left: 2px solid #b45309; }
+    .timeline-bar-fill.blank { background: #d1d5db; border-left: 2px solid #9ca3af; }
+    
+    /* Office 分组 */
+    .timeline-group-header { display: flex; align-items: center; padding: 8px 14px; background: #f0f9ff; border-bottom: 1px solid #e0f2fe; cursor: pointer; font-weight: 600; font-size: 12px; color: #0369a1; user-select: none; }
+    .timeline-group-header:hover { background: #e0f2fe; }
+    .timeline-group-header .group-toggle { margin-right: 6px; font-size: 10px; transition: transform 0.2s; display: inline-block; }
+    .timeline-group-header.collapsed .group-toggle { transform: rotate(-90deg); }
+    .timeline-group-body.collapsed { display: none; }
+    .timeline-group-count { margin-left: auto; font-size: 10px; color: var(--muted); font-weight: 400; }
+    
+    /* 批量操作栏 */
+    .batch-bar { display: none; align-items: center; gap: 10px; padding: 8px 14px; background: #eff6ff; border-top: 1px solid #bfdbfe; border-radius: 0 0 12px 12px; font-size: 12px; }
+    .batch-bar.show { display: flex; }
+    .batch-bar select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
+    .timeline-checkbox { margin-right: 6px; cursor: pointer; accent-color: #2563eb; }
+    
+    /* 空状态 */
+    .timeline-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; color: var(--muted); text-align: center; }
+    .timeline-empty .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .timeline-empty .empty-title { font-size: 15px; font-weight: 600; color: #6b7280; margin-bottom: 6px; }
+    .timeline-empty .empty-desc { font-size: 12px; max-width: 300px; }
+    
+    /* 时间线 tooltip */
+    .timeline-tooltip { display: none; position: fixed; z-index: 90; background: #1f2937; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.6; pointer-events: none; max-width: 280px; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+    .timeline-tooltip.show { display: block; }
+    .timeline-tooltip .tt-label { color: #9ca3af; font-size: 10px; }
+    .timeline-tooltip .tt-value { font-weight: 600; }
+    
+    /* 汇总行可点击 */
+    .avail-summary .summary-item.clickable { cursor: pointer; padding: 2px 8px; border-radius: 12px; transition: background 0.15s; }
+    .avail-summary .summary-item.clickable:hover { background: rgba(0,0,0,.06); }
+    
+    /* 日历格子剩余容量 */
+    .avail-capacity { font-size: 10px; color: #6b7280; margin-top: 2px; padding: 2px 4px; background: #f0fdf4; border-radius: 3px; text-align: center; }
+    
+    /* 移动端时间线卡片 */
+    @media (max-width: 768px) {
+      .calendar-day { min-height: 100px; padding: 4px; }
+      .calendar-event { font-size: 9px; padding: 2px 4px; }
+      .calendar-event .event-factory { font-size: 9px; }
+      .calendar-event .event-detail { font-size: 8px; }
+      .calendar-day-number { font-size: 11px; }
+      .search-input { min-width: 200px; }
+      .timeline-factory-info { width: 120px; }
+      .timeline-bar-container { margin-left: 4px; }
+      .timeline-week-labels { margin-left: 124px; }
+      .timeline-toolbar { gap: 4px; }
+      .timeline-search { width: 120px; }
+    }
+    @media (max-width: 480px) {
+      .timeline-row { flex-direction: column; align-items: flex-start; padding: 8px 10px; gap: 4px; }
+      .timeline-factory-info { width: 100%; }
+      .timeline-bar-container { width: 100%; margin-left: 0; }
+      .timeline-week-labels { display: none; }
+      .factory-timeline-body { max-height: 500px; }
+    }
+    /* 下拉菜单样式 */
+    .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; z-index: 100; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 160px; margin-top: 2px; }
+    .dropdown-menu.show { display: block; }
+    .dropdown-item { display: block; padding: 8px 12px; color: #111827; text-decoration: none; white-space: nowrap; cursor: pointer; }
+    .dropdown-item:hover { background: #f3f4f6; }
+    
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .syncing-icon { display: inline-block; animation: spin 1s linear infinite; }
+    
+    @keyframes pulse-light { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .report-light { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-left: 4px; vertical-align: middle; }
+    .report-light.overdue { background: #dc2626; animation: pulse-light 1.5s ease-in-out infinite; }
+    .report-light.critical { background: #92400e; animation: pulse-light 2s ease-in-out infinite; }
+    .report-light.warning { background: #f59e0b; }
+    .report-light.ok { background: #22c55e; }
+    
+    .timeline-row.selected { background: #eff6ff !important; border-left: 3px solid #2563eb; }
+    
+    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .filter-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; font-size: 11px; color: #1d4ed8; }
+    .filter-chip .chip-close { cursor: pointer; font-size: 14px; line-height: 1; color: #6b7280; }
+    .filter-chip .chip-close:hover { color: #dc2626; }
+    
+    .virtual-scroll-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; color: var(--muted); text-align: center; }
+    .virtual-scroll-empty .empty-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.6; }
+    .virtual-scroll-empty .empty-title { font-size: 13px; font-weight: 600; color: #6b7280; }
+    
+    .search-highlight { background: #fde68a; padding: 0 1px; border-radius: 2px; }
+    
+    .virtual-header .virtual-cell.sortable { cursor: pointer; }
+    .virtual-header .virtual-cell.sortable:hover { color: #2563eb; }
+    .virtual-header .virtual-cell .sort-arrow { font-size: 9px; margin-left: 2px; }
+    
+    .risk-card { transition: border-color 0.3s; }
+    .risk-card.has-risk { border-color: #fecaca !important; }
+    .risk-card.no-risk { border-color: #a7f3d0 !important; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="row" style="justify-content:space-between;align-items:center;">
+      <div class="brand">Oi Shanghai QC Team - Quality Assessment 排期看板</div>
+    </div>
+    <div class="row" style="margin-top:8px; flex-wrap:wrap; gap:6px; align-items:center;">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">筛选：</span>
+      <select id="filterOffice" class="btn"></select>
+      <select id="filterAssessor" class="btn"></select>
+      <select id="filterStatus" class="btn"><option value="">全部状态</option><option value="空白">空白</option><option value="Planned">Planned</option><option value="Pending">Pending</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select>
+      <input id="search" class="search-input" placeholder="🔍 搜索 供应商 / 工厂 / FID / Assessor" />
+      <button id="btnReset" class="btn">重置</button>
+      <div class="row tabs">
+        <button id="tabList" class="active">列表视图</button>
+        <button id="tabCal">日历视图</button>
+      </div>
+      <div id="filterChips" class="filter-chips"></div>
+    </div>
+    <div class="row" style="margin-top:6px; flex-wrap:wrap; gap:6px; align-items:center;">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;">操作：</span>
+      <input id="fileImportCsv" type="file" accept=".csv,text/csv" style="display:none" />
+      <input id="fileImportJson" type="file" accept=".json,application/json" style="display:none" />
+      <div class="dropdown" style="display:inline-block;position:relative;">
+        <button class="btn primary" onclick="window.app.toggleDropdown(this)">📂 导入供应商/工厂 ▼</button>
+        <div class="dropdown-menu">
+          <a href="#" class="dropdown-item" onclick="document.getElementById('fileImportCsv').click();return false;">📂 导入供应商/工厂</a>
+          <a href="#" class="dropdown-item" onclick="window.app.downloadImportTemplate();return false;">📋 下载导入模板</a>
+        </div>
+      </div>
+      <div class="dropdown" style="display:inline-block;position:relative;">
+        <button class="btn" onclick="window.app.toggleDropdown(this)">💾 导出/导入全部数据 ▼</button>
+        <div class="dropdown-menu">
+          <a href="#" class="dropdown-item" onclick="window.app.exportAllJSON();return false;">💾 导出全部数据 (JSON)</a>
+          <a href="#" class="dropdown-item" onclick="document.getElementById('fileImportJson').click();return false;">📥 导入全部数据 (JSON)</a>
+        </div>
+      </div>
+      <button id="btnSelectBackupFolder" class="btn" title="选择文件夹后每5分钟自动备份">📁 选择备份文件夹</button>
+      <span id="backupStatus" class="muted" style="font-size:11px;"></span>
+      <div id="syncStatus" style="font-size:11px;margin-left:auto;">🔄 正在连接...</div>
+      <button id="btnRetrySync" class="btn" style="display:none;font-size:10px;margin-left:4px;" onclick="window.app?.dataManager?.retrySync()">🔄 重试</button>
+    </div>
+    <div class="row" style="margin-top:4px;">
+      <div class="muted" style="font-size:10px;">⌨️ 快捷键：Esc关闭 | Ctrl+S保存 | Ctrl+F搜索 | ←→翻月 | T回今天 | 1/2切换视图 | Ctrl+N添加Assessor</div>
+    </div>
+    <div id="errorBox"></div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:12px;">
+  <section id="viewList">
+    <div class="grid">
+      <div class="card"><h3 style="display:inline-block;">Assessor 工作量总览（本周 / 下周）</h3><button id="btnAddAssessor" class="btn primary" style="margin-left:10px;vertical-align:middle;">➕ 添加 Assessor</button><div class="muted">Load Status：🟢=0，🟡=1，🔴≥2（按本周 Planned 计算）</div><div id="assessorTable" class="virtual-scroll-container" style="max-height:280px; overflow-y:auto; overflow-x:hidden;"><div class="virtual-header"><div class="virtual-cell" style="width:120px;">Assessor</div><div class="virtual-cell" style="width:75px;text-align:center;">本周Planned</div><div class="virtual-cell" style="width:70px;text-align:center;">本周Done</div><div class="virtual-cell" style="width:90px;text-align:center;">下周Planned</div><div class="virtual-cell" style="width:80px;">状态</div><div class="virtual-cell" style="width:60px;">操作</div></div></div></div>
+      <div class="card"><h3>待排工厂池</h3>
+      <div id="pendingStats" class="muted" style="margin-top:6px;"></div><div id="pendingTable" class="virtual-scroll-container" style="margin-top:10px; max-height:280px; overflow-y:auto; overflow-x:hidden;"><div class="virtual-header" id="pendingHeader"><div class="virtual-cell" style="width:40px;text-align:center;">#</div><div class="virtual-cell" style="width:160px;">Factory</div><div class="virtual-cell" style="width:60px;">FID</div><div class="virtual-cell" style="width:110px;">Available</div><div class="virtual-cell" style="width:80px;">Status</div><div class="virtual-cell" style="width:60px;">操作</div></div></div></div>
+      <div class="card risk-card" id="riskCard"><h3 style="display:inline-block;">风险 & 冲突提醒</h3><span class="help-icon" title="功能说明：
+🔴 超负荷 - Assessor本周Planned≥2条
+🔴 下周超负荷 - Assessor下周Planned≥2条
+🔴 日期冲突 - 同一天同一人多条安排
+🔴 过期任务 - Planned状态但日期已过去
+🟡 未分配 - Planned状态但无Assessor
+🔴 窗口冲突 - Assess Date不在工厂可用范围内
+🟡 缺分数 - Preparing Report状态且报告时间已到但无Score">?</span><div class="muted">仅提示，不阻断保存</div><div id="riskBox" style="margin-top:10px; max-height:280px; overflow-y:auto; overflow-x:hidden;"></div></div>
+    </div>
+    <div class="card" style="margin-top:12px;">
+      <h3 style="margin-bottom:4px;">Assessment 列表（报告时间状态灯：🟢时间充裕 🟡剩3天内 🟤剩1天 🔴已超期）</h3>
+      <div id="listAvailSummary" class="avail-summary" style="margin-bottom:8px;"></div>
+      <div style="margin-bottom:8px;"><button id="btnExportAssessment" class="btn" title="导出当前筛选的Assessment列表">📊 导出列表</button> <button id="btnAddFactory" class="btn primary">➕ 添加工厂</button></div>
+      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell sortable" data-sort="supplier" style="width:350px;">Vendor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="factory" style="width:380px;">Factory <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="fid" style="width:80px;">FID <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell sortable" data-sort="assessDate" style="width:110px;">Assess Date <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="status" style="width:100px;">Status <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="assessor" style="width:180px;">Assessor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="reportDate" style="width:150px;">报告时间(10工作日) <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="score" style="width:70px;text-align:center;">Score <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div></div></div>
+    </div>
+  </section>
+
+  <section id="viewCal" style="display:none;">
+    <div class="card">
+      <div class="calendar-header">
+        <div class="calendar-nav">
+          <button id="prevMonth" class="btn">◀ 上月</button>
+          <button id="nextMonth" class="btn">下月 ▶</button>
+        </div>
+        <div class="calendar-month" id="calendarMonth">2026年4月</div>
+        <div class="calendar-nav" style="align-items:center;">
+          <button id="calModeArrange" class="btn active">📅 排期视图</button>
+          <button id="calModeAvail" class="btn">🔍 可用窗口</button>
+          <label id="availFilterLabel" style="display:none;margin-left:10px;font-size:12px;cursor:pointer;"><input type="checkbox" id="availUnassignedOnly" checked style="vertical-align:middle;"> 仅未分配</label>
+          <button id="todayBtn" class="btn" style="margin-left:10px;">📍 今天</button>
+        </div>
+      </div>
+      <div id="availSummary" class="avail-summary" style="display:none;"></div>
+      <div class="calendar-grid">
+        <div class="calendar-weekdays">
+          <div class="calendar-weekday">周一</div>
+          <div class="calendar-weekday">周二</div>
+          <div class="calendar-weekday">周三</div>
+          <div class="calendar-weekday">周四</div>
+          <div class="calendar-weekday">周五</div>
+          <div class="calendar-weekday">周六</div>
+          <div class="calendar-weekday">周日</div>
+        </div>
+        <div id="calendarDays" class="calendar-days"></div>
+      </div>
+      <div class="calendar-legend" id="calendarLegendArrange">
+        <div class="legend-item"><div class="legend-color" style="background:#dbeafe; border-left:3px solid #2563eb;"></div><span>Planned</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#d1fae5; border-left:3px solid #16a34a;"></div><span>Done</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fed7aa; border-left:3px solid #f59e0b;"></div><span>Preparing Report</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#f3f4f6; border-left:3px solid #9ca3af;"></div><span>空白</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#eff6ff;"></div><span>今天</span></div>
+      </div>
+      <div class="calendar-legend" id="calendarLegendAvail" style="display:none;">
+        <div class="legend-item"><div class="legend-color" style="background:#e5e7eb;"></div><span>0个可用</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#bbf7d0;"></div><span>1-2个</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fde047;"></div><span>3-5个</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fca5a5;"></div><span>6-10个</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444;"></div><span>>10个</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#eff6ff;"></div><span>今天</span></div>
+      </div>
+      <div id="factoryTimeline" class="factory-timeline" style="display:none;">
+        <div class="factory-timeline-header">
+          <span class="factory-timeline-title">📋 工厂可用时间线</span>
+          <span style="font-size:11px;color:var(--muted);">🟢已分配 🟡待分配 ⬜空白</span>
+        </div>
+        <div class="timeline-toolbar">
+          <input type="text" id="timelineSearch" class="timeline-search" placeholder="🔍 搜索工厂 / Office / Assessor..." style="flex:1;min-width:160px;">
+          <label><input type="checkbox" id="timelineUnassignedOnly"> 仅未分配</label>
+          <label><input type="checkbox" id="timelineGroupByOffice" checked> 按Office分组</label>
+        </div>
+        <div id="timelineWeekLabels" class="timeline-week-labels"></div>
+        <div class="factory-timeline-body" id="timelineBody"></div>
+        <div class="batch-bar" id="batchBar">
+          <span id="batchCount">已选 0 家</span>
+          <span>分配给:</span>
+          <select id="batchAssessor"></select>
+          <button class="btn" id="btnBatchAssign" style="font-size:11px;padding:4px 10px;">执行分配</button>
+          <button class="btn" id="btnBatchClear" style="font-size:11px;padding:4px 10px;">取消选择</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="availPopup" class="avail-popup"></div>
+ <div id="timelineTooltip" class="timeline-tooltip"></div>
+
+<div id="drawer" class="drawer" aria-hidden="true">
+  <div class="hd">
+    <div><div id="dTitle" style="font-weight:900;">Factory</div><div id="dSub" class="muted">FID</div></div>
+  </div>
+  <div class="bd">
+    <div class="card" style="background:#f8fafc;"><div class="muted" style="margin-bottom:8px;">供应商 / 工厂 / FID 信息</div>
+      <div class="field"><label>Supplier</label><input id="fSupplier" type="text" placeholder="输入供应商名称" style="width:100%;" /></div>
+      <div class="field"><label>Factory</label><input id="fFactory" type="text" placeholder="输入工厂名称" style="width:100%;" /></div>
+      <div class="field"><label>FID</label><input id="fFid" type="text" placeholder="输入FID" style="width:100%;" /></div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="muted" style="margin-bottom:8px;">可评估窗口（两个日期输入，支持 2025-1-1 格式自动补全）</div>
+      <div class="twoCol">
+        <div class="field"><label>Available From</label><div style="display:flex;gap:8px;"><input id="fAvailFrom" type="text" placeholder="YYYY-MM-DD" style="flex:1;" /><button id="btnDatePickerFrom" class="btn" type="button" title="选择日期">📅</button></div></div>
+        <div class="field"><label>Available To</label><div style="display:flex;gap:8px;"><input id="fAvailTo" type="text" placeholder="YYYY-MM-DD" style="flex:1;" /><button id="btnDatePickerTo" class="btn" type="button" title="选择日期">📅</button></div></div>
+      </div>
+      <div class="muted" style="margin-top:4px;">保存时会写回到 "Factory Available Week" 字段，格式：YYYY-MM-DD ~ YYYY-MM-DD</div>
+      <div class="field" style="margin-top:12px;"><label>Assessor Name</label><select id="fAssessor"></select></div>
+      <div class="field"><label>Assess Date</label><div style="display:flex;gap:8px;"><input id="fDate" type="text" placeholder="YYYY-MM-DD" style="flex:1;" /><button id="btnDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
+      <div class="field"><label>Status</label><select id="fStatus"><option value="空白">空白</option><option value="Planned">Planned</option><option value="Pending">Pending</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select></div>
+      <div class="field"><label>报告时间(10工作日)</label><div style="display:flex;gap:8px;"><input id="fReportDate" type="text" placeholder="YYYY-MM-DD（留空则自动计算）" style="flex:1;" /><button id="btnReportDatePicker" class="btn" type="button" title="选择日期">📅</button></div></div>
+      <div id="scoreWrap" class="field" style="display:block;">
+        <label>Score（可编辑）</label>
+        <input id="fScore" type="number" step="0.1" placeholder="例如 85" />
+      </div>
+      <div class="field"><label>备注</label><textarea id="fRemarks" rows="3" placeholder="输入备注信息" style="width:100%;resize:vertical;"></textarea></div>
+      <div class="card" style="margin-top:12px;"><div class="muted" style="margin-bottom:8px;">冲突 / 负载即时提示（仅提示）</div><div id="dRisk"></div></div>
+    </div>
+  </div>
+  <div class="drawer-footer" style="padding:14px;border-top:1px solid var(--border);background:#fff;">
+    <div class="actions"><button id="btnSave" class="btn primary">Save</button><button id="dClose" class="btn">关闭</button></div>
+  </div>
+</div>
+
+<div id="assessorDrawer" class="drawer" aria-hidden="true">
+  <div class="hd">
+    <div><div id="assessorDrawerTitle" style="font-weight:900;">Edit Assessor</div><div class="muted">修改 Assessor 名称</div></div>
+    <button id="assessorDrawerClose" class="btn">关闭</button>
+  </div>
+  <div class="bd">
+    <div class="card" style="background:#f8fafc;">
+      <div class="muted" style="margin-bottom:8px;">当前 Assessor</div>
+      <div id="assessorCurrentName" style="font-size:16px;font-weight:600;"></div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="field">
+        <label>新 Assessor 名称</label>
+        <input id="fAssessorNewName" placeholder="输入新的 Assessor 名称" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;" />
+      </div>
+      <div class="card" style="margin-top:12px;background:#fffbeb;">
+        <div style="color:#92400e;font-size:13px;">
+          <strong>⚠️ 注意：</strong>修改 Assessor 名称会更新所有引用该 Assessor 的 Factory 记录。
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px;">
+        <button id="btnSaveAssessor" class="btn primary">保存修改</button>
+        <button id="btnDeleteAssessor" class="btn danger">删除 Assessor</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 添加新 Assessor 抽屉 -->
+<div id="addAssessorDrawer" class="drawer" aria-hidden="true">
+  <div class="hd">
+    <div><div style="font-weight:900;">添加新 Assessor</div><div class="muted">创建新的 Assessor</div></div>
+    <button id="addAssessorDrawerClose" class="btn">关闭</button>
+  </div>
+  <div class="bd">
+    <div style="margin-top:12px;">
+      <div class="field">
+        <label>Assessor 名称</label>
+        <input id="fNewAssessorName" placeholder="输入新的 Assessor 名称" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;" />
+      </div>
+      <div class="card" style="margin-top:12px;background:#ecfdf5;">
+        <div style="color:#065f46;font-size:13px;">
+          <strong>ℹ️ 提示：</strong>添加新 Assessor 后，可以在 Factory 抽屉中为其分配评估任务。
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px;">
+        <button id="btnSaveNewAssessor" class="btn primary">添加</button>
+        <button id="btnCancelAddAssessor" class="btn">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 日期选择器弹出层 -->
+<div id="datePickerPopup" style="display:none;position:fixed;z-index:100;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.15);padding:16px;min-width:280px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <button id="dpPrevMonth" class="btn" style="padding:4px 8px;">◀</button>
+    <span id="dpMonthYear" style="font-weight:600;"></span>
+    <button id="dpNextMonth" class="btn" style="padding:4px 8px;">▶</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px;color:var(--muted);margin-bottom:8px;">
+    <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+  </div>
+  <div id="dpDays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+  <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+    <button id="dpToday" class="btn" style="font-size:12px;">今天</button>
+    <button id="dpClear" class="btn" style="font-size:12px;">清除</button>
+    <button id="dpClose" class="btn" style="font-size:12px;">关闭</button>
+  </div>
+</div>
+
+<script>
+// ============ Supabase 初始化 ============
+// 安全提示：这些密钥有 Row Level Security 保护，只能访问允许的数据
+// 如需更高级别的安全，请使用后端服务或 Supabase Auth
+const SUPABASE_URL = 'https://zxfypgylgygqwhufepwm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4ZnlwZ3lsZ3lncXdodWZlcHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NzEyMTMsImV4cCI6MjA5MzA0NzIxM30.wUhkYYxbhThbf0TBoDZ3eLbQV0ECP-qzzu6vWrJ3aRc';
+
+// 尝试初始化 Supabase 客户端
+window.supabaseClient = null;
+try {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('[Supabase] ✅ CDN 加载成功，客户端已创建');
+  } else if (typeof createClient === 'function') {
+    window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('[Supabase] ✅ createClient 已找到，客户端已创建');
+  } else {
+    console.warn('[Supabase] ❌ 未找到 createClient，CDN 加载异常');
+    console.log('[Supabase] window.supabase 类型:', typeof window.supabase);
+    console.log('[Supabase] window.supabase 内容:', Object.keys(window.supabase || {}));
+  }
+} catch (e) {
+  window.supabaseClient = null;
+  console.error('[Supabase] ❌ 初始化异常:', e);
+}
+
+// 为兼容性，将 supabase 指向 window.supabaseClient
+var supabase = window.supabaseClient;
+
+// ============================================================
+// 配置模块
+// ============================================================
+const Config = {
+  STORAGE_KEY: 'assessor_schedule_v42_optimized',
+  COLUMN_WIDTH_KEY: 'assessor_schedule_column_widths',
+  VERSION: '4.2',
+  VIRTUAL_SCROLL: {
+    ROW_HEIGHT: 44,
+    BUFFER_SIZE: 5,
+    MAIN_TABLE_HEIGHT: 44
+  },
+  DEBOUNCE_DELAY: 200,
+  DEFAULT_COLUMN_WIDTHS: [50, 350, 380, 80, 180, 110, 100, 180, 150, 70, 150, 100, 60, 80]
+};
+
+const C = {"supplier": "Supplier", "factory": "Factory", "fid": "FID", "vendorType": "Vendor Type", "priority": "Priority", "office": "Factory Office", "avail": "Factory Available Week", "trainerDate": "Trainer Available Date", "trainer": "Trainer Name", "assessDate": "Assess Date", "status": "Assess Status", "assessor": "Assessor Name", "reportDate": "Report Date", "score": "Score", "remarks": "Remarks", "role": "Training Role for candidates \nobserver/member/ evaluatee"};
+
+// 中国法定节假日（2025-2028）
+const CHINA_HOLIDAYS = {
+  // 2025年
+  '2025-01-01': '元旦',
+  '2025-01-28': '春节', '2025-01-29': '春节', '2025-01-30': '春节', '2025-01-31': '春节',
+  '2025-02-01': '春节', '2025-02-02': '春节', '2025-02-03': '春节', '2025-02-04': '春节',
+  '2025-04-04': '清明', '2025-04-05': '清明', '2025-04-06': '清明',
+  '2025-05-01': '劳动节', '2025-05-02': '劳动节', '2025-05-03': '劳动节', '2025-05-05': '劳动节',
+  '2025-05-31': '端午', '2025-06-01': '端午', '2025-06-02': '端午',
+  '2025-10-01': '国庆', '2025-10-02': '国庆', '2025-10-03': '国庆', '2025-10-04': '国庆',
+  '2025-10-05': '国庆', '2025-10-06': '国庆', '2025-10-07': '国庆', '2025-10-08': '国庆',
+  // 2026年
+  '2026-01-01': '元旦', '2026-01-02': '元旦', '2026-01-03': '元旦',
+  '2026-02-17': '春节', '2026-02-18': '春节', '2026-02-19': '春节', '2026-02-20': '春节',
+  '2026-02-21': '春节', '2026-02-22': '春节', '2026-02-23': '春节', '2026-02-24': '春节',
+  '2026-04-04': '清明', '2026-04-05': '清明', '2026-04-06': '清明',
+  '2026-05-01': '劳动节', '2026-05-02': '劳动节', '2026-05-03': '劳动节', '2026-05-04': '劳动节', '2026-05-05': '劳动节',
+  '2026-06-19': '端午', '2026-06-20': '端午', '2026-06-21': '端午',
+  '2026-10-01': '国庆', '2026-10-02': '国庆', '2026-10-03': '国庆', '2026-10-04': '国庆',
+  '2026-10-05': '国庆', '2026-10-06': '国庆', '2026-10-07': '国庆', '2026-10-08': '国庆',
+  // 2027年
+  '2027-01-01': '元旦', '2027-01-02': '元旦', '2027-01-03': '元旦',
+  '2027-02-06': '春节', '2027-02-07': '春节', '2027-02-08': '春节', '2027-02-09': '春节',
+  '2027-02-10': '春节', '2027-02-11': '春节', '2027-02-12': '春节', '2027-02-13': '春节',
+  '2027-04-03': '清明', '2027-04-04': '清明', '2027-04-05': '清明',
+  '2027-05-01': '劳动节', '2027-05-02': '劳动节', '2027-05-03': '劳动节', '2027-05-04': '劳动节', '2027-05-05': '劳动节',
+  '2027-06-09': '端午', '2027-06-10': '端午', '2027-06-11': '端午',
+  '2027-10-01': '国庆', '2027-10-02': '国庆', '2027-10-03': '国庆', '2027-10-04': '国庆',
+  '2027-10-05': '国庆', '2027-10-06': '国庆', '2027-10-07': '国庆', '2027-10-08': '国庆',
+  // 2028年
+  '2028-01-01': '元旦', '2028-01-02': '元旦', '2028-01-03': '元旦',
+  '2028-01-26': '春节', '2028-01-27': '春节', '2028-01-28': '春节', '2028-01-29': '春节',
+  '2028-01-30': '春节', '2028-01-31': '春节', '2028-02-01': '春节', '2028-02-02': '春节',
+  '2028-04-03': '清明', '2028-04-04': '清明', '2028-04-05': '清明',
+  '2028-05-01': '劳动节', '2028-05-02': '劳动节', '2028-05-03': '劳动节', '2028-05-04': '劳动节', '2028-05-05': '劳动节',
+  '2028-05-29': '端午', '2028-05-30': '端午', '2028-05-31': '端午',
+  '2028-10-01': '国庆', '2028-10-02': '国庆', '2028-10-03': '国庆', '2028-10-04': '国庆',
+  '2028-10-05': '国庆', '2028-10-06': '国庆', '2028-10-07': '国庆', '2028-10-08': '国庆'
+};
+
+// 调休上班日（周末但需上班）
+const CHINA_WORKDAYS = {
+  '2025-01-26': true, '2025-02-08': true, '2025-04-27': true, '2025-09-28': true, '2025-10-11': true,
+  '2026-02-15': true, '2026-02-28': true, '2026-04-11': true, '2026-09-27': true, '2026-10-10': true,
+  '2027-02-04': true, '2027-02-20': true, '2027-04-10': true, '2027-09-26': true, '2027-10-09': true,
+  '2028-01-24': true, '2028-02-05': true, '2028-04-08': true, '2028-09-30': true, '2028-10-07': true
+};
+
+// 原始数据
+const DATA = {"columns": ["Supplier", "Factory", "FID", "Vendor Type", "Priority", "Factory Office", "Factory Available Week", "Trainer Available Date", "Trainer Name", "Assess Date", "Assess Status", "Assessor Name", "Score", "Training Role for candidates \nobserver/member/ evaluatee"], "rows": [{"Supplier": "Nantong Yaohan Garment Co., Ltd", "Factory": "Nantong Yaohanxing Industry & Trade Co., Ltd", "FID": 28696, "Vendor Type": "Top 10 Vendor & SRM - Risk & Witt Summit Vendor", "Priority": 1, "Factory Office": "SH", "Factory Available Week": "March 17-20 ,2026", "Trainer Available Date": "2026-03-19", "Trainer Name": "Jacky Li", "Assess Date": "2026-03-19", "Assess Status": "Done", "Assessor Name": "Betty Zhao/Feng Lin /Jerry Qu ", "Score": 81.0, "Training Role for candidates \nobserver/member/ evaluatee": "Observer"}, {"Supplier": null, "Factory": "Suqian Tufashion Garment Co., Ltd", "FID": 100442, "Vendor Type": null, "Priority": 1, "Factory Office": "SH", "Factory Available Week": "March 30- Apr.04", "Trainer Available Date": "2026-04-01", "Trainer Name": "Eric Chen", "Assess Date": "2026-04-01", "Assess Status": "Done", "Assessor Name": " Feng Lin /Jerry Qu ", "Score": 76.0, "Training Role for candidates \nobserver/member/ evaluatee": "Member"}, {"Supplier": "Yichang Richart Garment Factory Limited", "Factory": "YICHANG RICHART GARMENT FACTORY LIMIT", "FID": 25142, "Vendor Type": "Strategic Candidate", "Priority": 2, "Factory Office": "SH", "Factory Available Week": "* ===>", "Trainer Available Date": "NaT", "Trainer Name": null, "Assess Date": "2026-04-23", "Assess Status": "Planned", "Assessor Name": "Martin Zhang", "Score": NaN, "Training Role for candidates \nobserver/member/ evaluatee": null}, {"Supplier": "BlueWave Trading Co.,Ltd", "Factory": "Suzhou Bright Woven Ltd", "FID": "694969", "Vendor Type": "Strategic Partner", "Priority": 2, "Factory Office": "Cambodia", "Factory Available Week": "2026-04-30 ~ 2026-05-05", "Trainer Available Date": "2026-05-02", "Trainer Name": "Jane Doe", "Assess Date": "2026-05-03", "Assess Status": "Planned", "Assessor Name": "John Smith", "Score": 85.0, "Training Role for candidates \nobserver/member/ evaluatee": "Member"}]};
+
+// ============================================================
+// 工具模块
+// ============================================================
+const Utils = {
+  esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/\//g, '&#x2F;');
+  },
+  uniq(arr) { return [...new Set(arr.filter(x => String(x ?? '').trim() !== ''))]; },
+  debounce(fn, delay) {
+    let timer = null;
+    return function(...args) {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  },
+  throttle(fn, limit) {
+    let inThrottle;
+    return function(...args) {
+      if (!inThrottle) {
+        fn.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    };
+  },
+  parseISO(d) {
+    if (!d) return null;
+    const str = String(d).trim();
+    const m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const year = Number(m[1]), month = Number(m[2]) - 1, day = Number(m[3]);
+    const date = new Date(year, month, day);
+    if (isNaN(date.getTime())) return null;
+    if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) return null;
+    return date;
+  },
+  startOfWeek(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const day = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  },
+  addDays(date, n) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + n);
+    return d;
+  },
+  fmt(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${da}`;
+  },
+  parseAvailRange(s) {
+    const t = String(s || '').trim();
+    const m = t.match(/(\d{4}-\d{2}-\d{2})\s*(?:~|\-|–|—)\s*(\d{4}-\d{2}-\d{2})/);
+    if (m) return { from: m[1], to: m[2] };
+    return { from: '', to: '' };
+  },
+  formatAvailRange(from, to) {
+    from = String(from || '').trim();
+    to = String(to || '').trim();
+    if (from && to) return `${from} ~ ${to}`;
+    return from || to || '';
+  }
+};
+
+// ============================================================
+// 自动备份管理器模块
+// ============================================================
+class BackupManager {
+  constructor(dataManager) {
+    this.dataManager = dataManager;
+    this.dirHandle = null;
+    this.backupInterval = null;
+    this.BACKUP_INTERVAL_MS = 5 * 60 * 1000; // 5分钟
+    this.STORAGE_KEY = 'backup_folder_name';
+    this.init();
+  }
+
+  async init() {
+    // 尝试从 localStorage 恢复文件夹名称（仅用于显示状态）
+    const savedFolderName = localStorage.getItem(this.STORAGE_KEY);
+    if (savedFolderName) {
+      // 由于 File System Access API 的句柄无法持久化存储
+      // 页面刷新后需要用户重新选择文件夹
+    }
+  }
+
+  // 检查是否支持 File System Access API
+  isSupported() {
+    return 'showDirectoryPicker' in window;
+  }
+
+  // 选择备份文件夹
+  async selectBackupFolder() {
+    if (!this.isSupported()) {
+      throw new Error('您的浏览器不支持文件夹选择功能，请使用 Chrome 或 Edge 浏览器');
+    }
+
+    try {
+      this.dirHandle = await window.showDirectoryPicker();
+      // 保存文件夹名称到 localStorage（用于显示状态）
+      localStorage.setItem(this.STORAGE_KEY, this.dirHandle.name);
+      // 启动自动备份
+      this.startAutoBackup();
+      return true;
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        return false; // 用户取消了选择
+      }
+      throw e;
+    }
+  }
+
+  // 获取保存的文件夹名称
+  getSavedFolderName() {
+    return localStorage.getItem(this.STORAGE_KEY);
+  }
+
+  // 清除保存的文件夹
+  clearSavedFolder() {
+    localStorage.removeItem(this.STORAGE_KEY);
+    this.dirHandle = null;
+    this.stopAutoBackup();
+  }
+
+  // 启动自动备份
+  startAutoBackup() {
+    if (this.backupInterval) {
+      clearInterval(this.backupInterval);
+    }
+    // 立即执行一次备份
+    this.doBackup();
+    // 定时备份
+    this.backupInterval = setInterval(() => this.doBackup(), this.BACKUP_INTERVAL_MS);
+  }
+
+  // 停止自动备份
+  stopAutoBackup() {
+    if (this.backupInterval) {
+      clearInterval(this.backupInterval);
+      this.backupInterval = null;
+    }
+  }
+
+  // 执行备份
+  async doBackup() {
+    if (!this.dirHandle) {
+      return false;
+    }
+
+    try {
+      // 验证权限
+      if (this.dirHandle.requestPermission) {
+        const permission = await this.dirHandle.requestPermission({ mode: 'readwrite' });
+        if (permission !== 'granted') {
+          return false;
+        }
+      }
+
+      // 生成备份文件名（带时间戳）
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+      const fileName = `backup_${timestamp}.json`;
+
+      // 获取数据
+      const data = this.dataManager.exportJSON();
+
+      // 写入文件
+      const fileHandle = await this.dirHandle.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(data);
+      await writable.close();
+      
+      // 清理旧备份（保留最近 10 个）
+      await this._cleanOldBackups();
+      
+      return true;
+    } catch (e) {
+      console.error('自动备份失败:', e);
+      return false;
+    }
+  }
+
+  // 清理旧备份文件
+  async _cleanOldBackups() {
+    try {
+      const files = [];
+      for await (const entry of this.dirHandle.values()) {
+        if (entry.kind === 'file' && entry.name.startsWith('backup_') && entry.name.endsWith('.json')) {
+          const file = await entry.getFile();
+          files.push({ entry, name: entry.name, date: file.lastModified });
+        }
+      }
+
+      // 按时间排序，保留最新的 10 个
+      files.sort((a, b) => b.date - a.date);
+      const toDelete = files.slice(10);
+
+      for (const file of toDelete) {
+        await this.dirHandle.removeEntry(file.name);
+      }
+    } catch (e) {
+      console.error('清理旧备份失败:', e);
+    }
+  }
+
+  // 降级方案：下载备份文件
+  downloadBackup() {
+    const data = this.dataManager.exportJSON();
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+    const fileName = `backup_${timestamp}.json`;
+    
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    return fileName;
+  }
+
+  // 获取备份状态
+  getStatus() {
+    const savedFolderName = this.getSavedFolderName();
+    return {
+      supported: this.isSupported(),
+      hasFolder: !!this.dirHandle,
+      isRunning: !!this.backupInterval,
+      savedFolderName: savedFolderName
+    };
+  }
+}
+
+// ============================================================
+// Supabase 数据管理器模块
+// ============================================================
+class SupabaseDataManager {
+  constructor() {
+    this.rows = [];
+    this.subscribers = [];
+    this.customAssessors = [];
+    this.initialized = false;
+    this.realtimeChannel = null;
+    this._initPromise = null;
+    this._syncing = false;
+    this._reloading = false;
+    
+    // 首先尝试从本地加载数据（同步）
+    const localData = this._loadFromLocalStorage();
+    if (localData && localData.length > 0) {
+      this.rows = localData;
+    } else if (typeof DATA !== 'undefined' && DATA.rows) {
+      // 如果没有本地数据，使用默认 DATA
+      this.rows = JSON.parse(JSON.stringify(DATA.rows));
+    }
+    
+    // 加载自定义 Assessors
+    const savedAssessors = localStorage.getItem(Config.STORAGE_KEY + '_assessors');
+    if (savedAssessors) {
+      this.customAssessors = JSON.parse(savedAssessors);
+    }
+    
+    // 默认按 Supplier 排序
+    this.sortBySupplier();
+    
+    // 异步初始化 Supabase
+    this._initPromise = this.init().then(() => {
+      this.initialized = true;
+      // 从 Supabase 加载数据后再次排序
+      this.sortBySupplier();
+    }).catch(() => {
+      // 初始化失败时也要通知，确保界面能显示本地数据或空状态
+      this.initialized = true;
+      this.notify();
+    });
+  }
+  
+  // 等待初始化完成
+  async waitForInit() {
+    if (this._initPromise) {
+      await this._initPromise;
+    }
+    return this;
+  }
+  
+  // 初始化 Supabase 连接
+  async init() {
+    if (!supabase) {
+      this._updateSyncStatus('local', '本地模式（Supabase 未加载）');
+      return;
+    }
+
+    this._updateSyncStatus('syncing', '正在连接云端...');
+
+    try {
+      console.log('[Supabase] 开始测试连接...');
+
+      // 超时辅助：5秒后必定返回，不依赖 Supabase 请求是否结束
+      const timeoutResult = () => new Promise(resolve => 
+        setTimeout(() => resolve({ data: null, error: { message: 'TIMEOUT', name: 'TimeoutError' } }), 5000)
+      );
+
+      // 测试连接（用 Promise.race 确保 5 秒内一定能继续执行）
+      const testResult = await Promise.race([
+        supabase.from('assessments').select('count', { count: 'exact', head: true }),
+        timeoutResult()
+      ]);
+
+      if (testResult.error) {
+        console.error('Supabase 连接测试失败:', testResult.error);
+        this._updateSyncStatus('error', '连接超时 — 网络限制，已回退本地模式');
+        return;
+      }
+
+      // 从 Supabase 加载数据（同样用 Promise.race）
+      const dataResult = await Promise.race([
+        supabase.from('assessments').select('*').order('id', { ascending: true }),
+        timeoutResult()
+      ]);
+
+      if (dataResult.error) {
+        console.error('从 Supabase 加载数据失败:', dataResult.error);
+        this._updateSyncStatus('error', '加载超时 — 网络限制，已回退本地模式');
+        return;
+      }
+
+      const data = dataResult.data;
+
+      if (data && data.length > 0) {
+        const remoteRows = data.map(item => item.data);
+        const localRows = this._loadFromLocalStorage();
+        if (localRows && localRows.length > 0) {
+          const conflicts = this._findConflicts(localRows, remoteRows);
+          if (conflicts.length > 0) {
+            await new Promise((resolve) => {
+              this._pendingConflictResolve = resolve;
+              this._pendingConflictData = { localRows, remoteRows, conflicts };
+              document.dispatchEvent(new CustomEvent('conflict-detected'));
+            });
+            this._pendingConflictResolve = null;
+          }
+          this.rows = this._mergeRows(localRows, remoteRows);
+        } else {
+          this.rows = remoteRows;
+        }
+        this._saveToLocalStorage();
+        this._updateSyncStatus('connected', `已同步 ${data.length} 条记录`);
+      } else {
+        // 如果有本地数据，上传到 Supabase
+        if (this.rows.length > 0) {
+          this._updateSyncStatus('syncing', '正在上传本地数据...');
+          await this._syncToSupabase();
+          this._updateSyncStatus('connected', `已上传 ${this.rows.length} 条记录`);
+        } else {
+          this._updateSyncStatus('connected', '已连接（无数据）');
+        }
+      }
+
+      // 设置实时订阅
+      this._setupRealtimeSubscription();
+
+    } catch (e) {
+      console.error('Supabase 初始化错误:', e);
+      this._updateSyncStatus('error', '连接出错: ' + e.message);
+    }
+  }
+  
+  // 设置实时订阅
+  _setupRealtimeSubscription() {
+    if (!supabase) return;
+    
+    this.realtimeChannel = supabase
+      .channel('assessments_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'assessments' },
+        (payload) => {
+          // 重新加载数据
+          this._reloadFromSupabase();
+        }
+      )
+      .subscribe();
+  }
+  
+  // 从 Supabase 重新加载数据
+  async _reloadFromSupabase() {
+    if (!supabase || this._reloading || this._syncing) return;
+    this._reloading = true;
+    
+    try {
+      const { data, error } = await supabase
+        .from('assessments')
+        .select('*')
+        .order('id', { ascending: true });
+      
+      if (error) {
+        console.error('重新加载数据失败:', error);
+        return;
+      }
+      
+      if (data) {
+        this.rows = data.map(item => item.data);
+        this._saveToLocalStorage();
+        this.notify();
+      }
+    } catch (e) {
+      console.error('重新加载数据错误:', e);
+    } finally {
+      this._reloading = false;
+    }
+  }
+  
+  async _syncToSupabase() {
+    if (!supabase || this._syncing) return;
+    this._syncing = true;
+
+    this._updateSyncStatus('syncing', '正在同步...');
+
+    try {
+      const { data: remoteData, error: fetchError } = await supabase
+        .from('assessments')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (fetchError) {
+        console.error('拉取远程数据失败，降级为直接上传:', fetchError);
+        await this._forceSyncLocal();
+        return;
+      }
+
+      const remoteRows = (remoteData || []).map(item => item.data);
+      const merged = this._mergeRows(this.rows, remoteRows);
+
+      this.rows = merged;
+      this._saveToLocalStorage();
+
+      const records = merged.map((row, index) => ({
+        id: index + 1,
+        data: row,
+        updated_at: new Date().toISOString()
+      }));
+
+      const { error } = await supabase.from('assessments').upsert(records, { onConflict: 'id' });
+
+      if (error) {
+        console.error('同步到 Supabase 失败:', error);
+        this._updateSyncStatus('error', '同步失败: ' + error.message);
+        throw error;
+      }
+
+      if (merged.length > 0) {
+        const { error: delError } = await supabase
+          .from('assessments')
+          .delete()
+          .gt('id', merged.length);
+        if (delError) console.warn('清理多余记录失败:', delError);
+      }
+
+      this._updateSyncStatus('connected', `已同步 ${merged.length} 条记录`);
+    } catch (e) {
+      console.error('同步到 Supabase 错误:', e);
+      this._updateSyncStatus('error', '同步出错: ' + e.message);
+    } finally {
+      this._syncing = false;
+    }
+  }
+
+  _mergeRows(localRows, remoteRows) {
+    const mergedMap = new Map();
+
+    // 辅助函数：生成唯一键（Supplier + Factory + FID）
+    const getUniqueKey = (row) => {
+      const fid = String(this.get(row, 'fid') || '').trim();
+      const supplier = String(this.get(row, 'supplier') || '').trim();
+      const factory = String(this.get(row, 'factory') || '').trim();
+      if (fid) {
+        return `${supplier}::${factory}::${fid}`;
+      }
+      return '__new_' + Math.random().toString(36).slice(2);
+    };
+
+    // 先添加远程数据
+    remoteRows.forEach(row => {
+      const key = getUniqueKey(row);
+      mergedMap.set(key, { ...row });
+    });
+
+    // 再添加本地数据（相同 key 会覆盖，但相同 FID 不同 Supplier/Factory 会有不同 key）
+    localRows.forEach(row => {
+      const key = getUniqueKey(row);
+      mergedMap.set(key, { ...row });
+    });
+
+    return [...mergedMap.values()];
+  }
+
+  _findConflicts(localRows, remoteRows) {
+    const fields = ['supplier','factory','fid','vendorType','priority','office','avail','trainerDate','trainer','assessDate','status','assessor','reportDate','score','remarks','role'];
+    const localMap = new Map();
+    const remoteMap = new Map();
+    const getUniqueKey = (row) => {
+      const fid = String(this.get(row, 'fid') || '').trim();
+      const supplier = String(this.get(row, 'supplier') || '').trim();
+      const factory = String(this.get(row, 'factory') || '').trim();
+      return fid ? `${supplier}::${factory}::${fid}` : '';
+    };
+    localRows.forEach(r => { const k = getUniqueKey(r); if (k) localMap.set(k, r); });
+    remoteRows.forEach(r => { const k = getUniqueKey(r); if (k) remoteMap.set(k, r); });
+    const conflicts = [];
+    const allKeys = new Set([...localMap.keys(), ...remoteMap.keys()]);
+    for (const key of allKeys) {
+      const local = localMap.get(key);
+      const remote = remoteMap.get(key);
+      if (!local) { conflicts.push({ key, type: 'local_missing', factory: this.get(remote, 'factory'), fid: this.get(remote, 'fid'), local: null, remote }); continue; }
+      if (!remote) { conflicts.push({ key, type: 'remote_missing', factory: this.get(local, 'factory'), fid: this.get(local, 'fid'), local, remote: null }); continue; }
+      const diffs = [];
+      for (const f of fields) {
+        const lv = String(this.get(local, f) || '').trim();
+        const rv = String(this.get(remote, f) || '').trim();
+        if (lv !== rv) diffs.push({ field: f, localVal: lv, remoteVal: rv });
+      }
+      if (diffs.length > 0) conflicts.push({ key, type: 'differs', factory: this.get(local, 'factory'), fid: this.get(local, 'fid'), local, remote, diffs });
+    }
+    return conflicts;
+  }
+
+  async _forceSyncLocal() {
+    const records = this.rows.map((row, index) => ({
+      id: index + 1,
+      data: row,
+      updated_at: new Date().toISOString()
+    }));
+
+    const { error } = await supabase.from('assessments').upsert(records, { onConflict: 'id' });
+
+    if (error) {
+      this._updateSyncStatus('error', '同步失败: ' + error.message);
+      throw error;
+    }
+
+    this._updateSyncStatus('connected', `已上传 ${this.rows.length} 条记录（未合并远程）`);
+  }
+  
+  // 本地存储方法
+  _saveToLocalStorage() {
+    try {
+      localStorage.setItem(Config.STORAGE_KEY, JSON.stringify(this.rows));
+    } catch (e) {
+      console.error('保存到本地存储失败:', e);
+    }
+  }
+
+  _loadFromLocalStorage() {
+    try {
+      const data = localStorage.getItem(Config.STORAGE_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  // 更新同步状态显示
+  _updateSyncStatus(status, message) {
+    const statusEl = document.getElementById('syncStatus');
+    if (!statusEl) return;
+    const retryBtn = document.getElementById('btnRetrySync');
+    
+    switch (status) {
+      case 'connected':
+        statusEl.textContent = '☁️ ' + (message || '已连接到云端');
+        statusEl.style.color = '#16a34a';
+        if (retryBtn) retryBtn.style.display = 'none';
+        break;
+      case 'local':
+        statusEl.textContent = '💻 ' + (message || '本地模式');
+        statusEl.style.color = '#6b7280';
+        if (retryBtn) retryBtn.style.display = 'none';
+        break;
+      case 'error':
+        statusEl.textContent = '⚠️ ' + (message || '连接失败');
+        statusEl.style.color = '#dc2626';
+        if (retryBtn) retryBtn.style.display = 'inline-block';
+        break;
+      case 'syncing':
+        statusEl.innerHTML = '<span class="syncing-icon">🔄</span> ' + (message || '同步中...');
+        statusEl.style.color = '#2563eb';
+        if (retryBtn) retryBtn.style.display = 'none';
+        break;
+      default:
+        statusEl.textContent = message || '';
+    }
+  }
+
+  // 手动重试同步
+  async retrySync() {
+    this._updateSyncStatus('syncing', '正在重试连接...');
+    await this.init();
+    if (this.initialized) {
+      this.sortBySupplier();
+      this.notify();
+    }
+  }
+
+  // 自定义 Assessor 列表管理
+  _loadCustomAssessors() {
+    try {
+      const s = localStorage.getItem(Config.STORAGE_KEY + '_assessors');
+      if (s) return JSON.parse(s);
+    } catch (e) {}
+    return [];
+  }
+
+  _saveCustomAssessors() {
+    try {
+      localStorage.setItem(Config.STORAGE_KEY + '_assessors', JSON.stringify(this.customAssessors));
+    } catch (e) {}
+  }
+
+  addCustomAssessor(name) {
+    if (!this.customAssessors.includes(name)) {
+      this.customAssessors.push(name);
+      this._saveCustomAssessors();
+    }
+  }
+
+  removeCustomAssessor(name) {
+    this.customAssessors = this.customAssessors.filter(a => a !== name);
+    this._saveCustomAssessors();
+  }
+
+  getAllAssessors() {
+    const fromData = Utils.uniq(this.rows.map(r => String(this.get(r, 'assessor') || '').trim())).filter(a => a !== '');
+    return Utils.uniq([...fromData, ...this.customAssessors]).sort();
+  }
+
+  subscribe(callback) {
+    this.subscribers.push(callback);
+  }
+
+  notify() {
+    this.subscribers.forEach(cb => cb(this.rows));
+  }
+
+  get(row, key) {
+    const candidates = [C[key]];
+    if (key === 'assessDate') candidates.push('Access Date');
+    if (key === 'status') candidates.push('Access Status');
+    if (key === 'assessor') candidates.push('Accessor Name');
+    if (key === 'role') candidates.push('Training Role for candidates', 'Training Role');
+    for (const k of candidates) { if (k && (k in row)) return row[k] ?? ''; }
+    return '';
+  }
+
+  set(row, key, value) {
+    const k = C[key];
+    if (k && (k in row)) { row[k] = value; return; }
+    if (key === 'assessDate' && ('Access Date' in row)) { row['Access Date'] = value; return; }
+    if (key === 'status' && ('Access Status' in row)) { row['Access Status'] = value; return; }
+    if (key === 'assessor' && ('Accessor Name' in row)) { row['Accessor Name'] = value; return; }
+    if (k) row[k] = value;
+  }
+
+  getAll() { 
+    return this.rows; 
+  }
+
+  // 按 Supplier + Factory 排序
+  sortBySupplier() {
+    this.rows.sort((a, b) => {
+      const supplierA = String(this.get(a, 'supplier') || '').toLowerCase();
+      const supplierB = String(this.get(b, 'supplier') || '').toLowerCase();
+      const factoryA = String(this.get(a, 'factory') || '').toLowerCase();
+      const factoryB = String(this.get(b, 'factory') || '').toLowerCase();
+      
+      if (supplierA !== supplierB) {
+        return supplierA.localeCompare(supplierB);
+      }
+      return factoryA.localeCompare(factoryB);
+    });
+    this._saveToLocalStorage();
+    this.notify();
+  }
+
+  async updateRow(index, updates) {
+    if (index < 0 || index >= this.rows.length) return;
+    Object.entries(updates).forEach(([key, value]) => this.set(this.rows[index], key, value));
+    this._saveToLocalStorage();
+    await this._syncToSupabase();
+    this.notify();
+  }
+
+  async updateRowsByAssessor(oldName, newName) {
+    let count = 0;
+    this.rows.forEach(row => {
+      if (this.get(row, 'assessor') === oldName) {
+        this.set(row, 'assessor', newName);
+        count++;
+      }
+    });
+    if (count > 0) {
+      this._saveToLocalStorage();
+      // 同步所有更改到 Supabase
+      await this._syncToSupabase();
+      this.notify();
+    }
+    return count;
+  }
+
+  async deleteRowsByAssessor(name) {
+    const initialCount = this.rows.length;
+    this.rows = this.rows.filter(row => this.get(row, 'assessor') !== name);
+    const deleted = initialCount - this.rows.length;
+    if (deleted > 0) {
+      this._saveToLocalStorage();
+      // 同步到 Supabase
+      await this._syncToSupabase();
+      this.notify();
+    }
+    return deleted;
+  }
+
+  async deleteRow(index) {
+    if (index >= 0 && index < this.rows.length) {
+      this.rows.splice(index, 1);
+      this._saveToLocalStorage();
+      await this._syncToSupabase();
+      this.notify();
+    }
+  }
+
+  async loadData(data) {
+    this.rows = Array.isArray(data) ? data : [];
+    this._saveToLocalStorage();
+    // 同步到 Supabase
+    await this._syncToSupabase();
+    this.notify();
+  }
+
+  _sanitizeForJSON(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(x => this._sanitizeForJSON(x));
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === 'number') {
+        if (isNaN(value)) result[key] = null;
+        else if (!isFinite(value)) result[key] = null;
+        else result[key] = value;
+      } else if (typeof value === 'object' && value !== null) {
+        result[key] = this._sanitizeForJSON(value);
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  }
+
+  persist() {
+    try {
+      const cleanRows = this._sanitizeForJSON(this.rows);
+      localStorage.setItem(Config.STORAGE_KEY, JSON.stringify(cleanRows));
+    } catch (e) { console.error('Persist failed:', e); }
+  }
+
+  _loadFromStorage() {
+    try {
+      const s = localStorage.getItem(Config.STORAGE_KEY);
+      if (s) return JSON.parse(s);
+    } catch (e) {}
+    return null;
+  }
+
+  exportJSON() {
+    return JSON.stringify({ version: 'v4.2', exportedAt: new Date().toISOString(), rows: this.rows }, null, 2);
+  }
+}
+
+// ============================================================
+// 虚拟滚动组件
+// ============================================================
+class VirtualScroller {
+  constructor(containerId, options = {}) {
+    this.container = document.getElementById(containerId);
+    this.options = {
+      rowHeight: options.rowHeight || Config.VIRTUAL_SCROLL.ROW_HEIGHT,
+      bufferSize: options.bufferSize || Config.VIRTUAL_SCROLL.BUFFER_SIZE,
+      renderRow: options.renderRow || (() => ''),
+      onRowClick: options.onRowClick || null,
+      columns: options.columns || [],
+      enableColumnResize: options.enableColumnResize || false,
+      onColumnResize: options.onColumnResize || null
+    };
+    this.data = [];
+    this.visibleRange = { start: 0, end: 0 };
+    this.rowElements = new Map();
+    this._init();
+  }
+
+  _init() {
+    // 保存原始表头HTML（如果存在）
+    const existingHeader = this.container.querySelector('.virtual-header');
+    const headerHTML = existingHeader ? existingHeader.outerHTML : '';
+    
+    this.container.innerHTML = headerHTML + '<div class="virtual-scroll-content"></div>';
+    this.header = this.container.querySelector('.virtual-header');
+    this.content = this.container.querySelector('.virtual-scroll-content');
+    this._throttledScroll = Utils.throttle(() => this._onScroll(), 16);
+    this._resizeHandler = Utils.debounce(() => this.refresh(), 100);
+    this.container.addEventListener('scroll', this._throttledScroll, { passive: true });
+    window.addEventListener('resize', this._resizeHandler);
+    
+    if (this.options.onRowClick) {
+      this.content.addEventListener('click', (e) => {
+        const rowEl = e.target.closest('.virtual-row');
+        if (rowEl) {
+          const index = parseInt(rowEl.dataset.index);
+          if (!isNaN(index)) this.options.onRowClick(index, this.data[index]);
+        }
+      });
+    }
+    
+    // 初始化列宽调整（如果启用）
+    if (this.options.enableColumnResize) {
+      this._initColumnResize();
+    }
+  }
+  
+  _initColumnResize() {
+    if (!this.header) return;
+    let isResizing = false;
+    let currentCol = null;
+    let startX = 0;
+    let startWidth = 0;
+    
+    // 使用事件委托，绑定在 header 上
+    this.header.addEventListener('mousedown', (e) => {
+      const cell = e.target.closest('.virtual-cell');
+      if (!cell) return;
+      const rect = cell.getBoundingClientRect();
+      if (e.clientX > rect.right - 10) {
+        const headerCells = Array.from(this.header.querySelectorAll('.virtual-cell'));
+        isResizing = true;
+        currentCol = headerCells.indexOf(cell);
+        startX = e.clientX;
+        startWidth = parseInt(cell.style.width) || rect.width;
+        cell.classList.add('resizing');
+        e.preventDefault();
+      }
+    });
+    
+    const onMouseMove = (e) => {
+      if (!isResizing || currentCol === null) return;
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(50, startWidth + diff);
+      const headerCells = this.header.querySelectorAll('.virtual-cell');
+      if (headerCells[currentCol]) {
+        headerCells[currentCol].style.width = newWidth + 'px';
+        // 更新所有数据行的对应列宽度
+        const dataRows = this.content.querySelectorAll('.virtual-row');
+        dataRows.forEach(row => {
+          const cells = row.querySelectorAll('.virtual-cell');
+          if (cells[currentCol]) cells[currentCol].style.width = newWidth + 'px';
+        });
+      }
+    };
+    
+    const onMouseUp = () => {
+      if (isResizing && currentCol !== null) {
+        const headerCells = this.header.querySelectorAll('.virtual-cell');
+        if (headerCells[currentCol]) headerCells[currentCol].classList.remove('resizing');
+        if (this.options.onColumnResize) {
+          const widths = Array.from(headerCells).map(c => parseInt(c.style.width) || c.offsetWidth);
+          this.options.onColumnResize(widths);
+        }
+      }
+      isResizing = false;
+      currentCol = null;
+    };
+    
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    this._cleanupResize = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }
+
+  setData(data) {
+    this.data = data;
+    if (data.length === 0) {
+      this._showEmpty();
+      return;
+    }
+    this._hideEmpty();
+    if (this.container.classList.contains('no-scroll')) {
+      this._renderAllRows();
+    } else {
+      this._updateTotalHeight();
+      this._forceRender();
+    }
+  }
+
+  _showEmpty() {
+    this.rowElements.forEach(el => el.remove());
+    this.rowElements.clear();
+    this.content.innerHTML = '';
+    this.content.style.height = 'auto';
+    const msg = this.options.emptyMessage || '暂无数据';
+    const icon = this.options.emptyIcon || '📋';
+    this.content.innerHTML = `<div class="virtual-scroll-empty"><div class="empty-icon">${icon}</div><div class="empty-title">${msg}</div></div>`;
+  }
+
+  _hideEmpty() {
+    const emptyEl = this.content.querySelector('.virtual-scroll-empty');
+    if (emptyEl) emptyEl.remove();
+  }
+
+  _renderAllRows() {
+    // 清除所有已渲染的行
+    this.rowElements.forEach(el => el.remove());
+    this.rowElements.clear();
+    this.content.innerHTML = '';
+    // 渲染所有行（无滚动模式）
+    this.data.forEach((row, index) => {
+      const rowEl = this._createRowElementNoScroll(index);
+      this.content.appendChild(rowEl);
+      this.rowElements.set(index, rowEl);
+    });
+  }
+
+  _createRowElementNoScroll(index) {
+    const row = this.data[index];
+    const el = document.createElement('div');
+    el.className = 'virtual-row';
+    el.dataset.index = index;
+    el.style.position = 'relative';
+    el.style.top = 'auto';
+    el.style.height = 'auto';
+    el.style.minHeight = `${this.options.rowHeight}px`;
+    el.innerHTML = this.options.renderRow(row, index);
+    return el;
+  }
+
+  _forceRender() {
+    // 清除所有已渲染的行（保留表头），强制重新渲染
+    this.rowElements.forEach(el => el.remove());
+    this.rowElements.clear();
+    this.visibleRange = { start: 0, end: 0 };
+    // 重新获取content引用（因为_init可能被重新调用）
+    this.content = this.container.querySelector('.virtual-scroll-content');
+    this._onScroll();
+  }
+
+  _updateTotalHeight() {
+    this.content.style.height = `${this.data.length * this.options.rowHeight}px`;
+  }
+
+  _onScroll() {
+    const scrollTop = this.container.scrollTop;
+    const containerHeight = this.container.clientHeight;
+    const startIndex = Math.max(0, Math.floor(scrollTop / this.options.rowHeight) - this.options.bufferSize);
+    const endIndex = Math.min(this.data.length, Math.ceil((scrollTop + containerHeight) / this.options.rowHeight) + this.options.bufferSize);
+    if (startIndex !== this.visibleRange.start || endIndex !== this.visibleRange.end) {
+      this.visibleRange = { start: startIndex, end: endIndex };
+      this._renderVisibleRows();
+    }
+  }
+
+  _renderVisibleRows() {
+    const { start, end } = this.visibleRange;
+    const activeIndices = new Set();
+    for (let i = start; i < end; i++) {
+      activeIndices.add(i);
+      if (!this.rowElements.has(i)) {
+        const rowEl = this._createRowElement(i);
+        this.content.appendChild(rowEl);
+        this.rowElements.set(i, rowEl);
+      }
+    }
+    for (const [index, el] of this.rowElements) {
+      if (!activeIndices.has(index)) { el.remove(); this.rowElements.delete(index); }
+    }
+  }
+
+  _createRowElement(index) {
+    const row = this.data[index];
+    const el = document.createElement('div');
+    el.className = 'virtual-row';
+    el.dataset.index = index;
+    el.style.top = `${index * this.options.rowHeight}px`;
+    el.style.height = `${this.options.rowHeight}px`;
+    // 使用保存的列宽计算行最小宽度
+    try {
+      const saved = localStorage.getItem(Config.COLUMN_WIDTH_KEY);
+      const widths = saved ? JSON.parse(saved) : Config.DEFAULT_COLUMN_WIDTHS;
+      const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+      el.style.minWidth = totalWidth + 'px';
+    } catch (e) {
+      el.style.minWidth = '1700px';
+    }
+    el.innerHTML = this.options.renderRow(row, index);
+    return el;
+  }
+
+  refresh() { this._onScroll(); }
+  destroy() {
+    this.container.removeEventListener('scroll', this._throttledScroll);
+    window.removeEventListener('resize', this._resizeHandler);
+    if (this._cleanupResize) this._cleanupResize();
+    this.rowElements.forEach(el => el.remove());
+    this.rowElements.clear();
+  }
+}
+
+// ============================================================
+// 工作负荷计算器
+// ============================================================
+class WorkloadCalculator {
+  constructor(dataManager) {
+    this.dataManager = dataManager;
+  }
+
+  calculate(baseRows) {
+    const ws = Utils.startOfWeek(new Date()), we = Utils.addDays(ws, 7), nws = Utils.addDays(ws, 7), nwe = Utils.addDays(ws, 14);
+    const map = new Map();
+    const ensure = (a) => { if (!map.has(a)) map.set(a, { assessor: a, plannedThis: 0, doneThis: 0, plannedNext: 0 }); };
+    
+    // 首先添加所有自定义 Assessor（确保新添加的 Assessor 也显示在列表中）
+    const allAssessors = this.dataManager.getAllAssessors();
+    allAssessors.forEach(a => ensure(a));
+    
+    for (const r of baseRows) {
+      const a = String(this.dataManager.get(r, 'assessor') || '').trim();
+      if (!a) continue;
+      ensure(a);
+      const d = Utils.parseISO(this.dataManager.get(r, 'assessDate'));
+      const st = String(this.dataManager.get(r, 'status') || '').trim();
+      if (!d) continue;
+      if (d >= ws && d < we) { if (st === 'Planned' || st === 'Pending') map.get(a).plannedThis++; if (st === 'Done') map.get(a).doneThis++; }
+      if (d >= nws && d < nwe) { if (st === 'Planned' || st === 'Pending') map.get(a).plannedNext++; }
+    }
+    
+    const out = [...map.values()];
+    for (const x of out) { x.load = (x.plannedThis === 0) ? 'green' : ((x.plannedThis === 1) ? 'yellow' : 'red'); }
+    for (const x of out) { x.nextLoad = (x.plannedNext >= 2) ? 'red' : 'green'; }
+    out.sort((a, b) => a.assessor.localeCompare(b.assessor));
+    return out;
+  }
+}
+
+// ============================================================
+// 日历视图
+// ============================================================
+class CalendarView {
+  constructor(dataManager) {
+    this.dataManager = dataManager;
+    this.container = document.getElementById('calendarDays');
+    this.monthHeader = document.getElementById('calendarMonth');
+    this.currentDate = new Date();
+    this.mode = 'arrange';
+    this.availOnlyUnassigned = true;
+    this._timelineSearch = '';
+    this._timelineUnassignedOnly = false;
+    this._timelineGroupByOffice = true;
+    this._selectedFactories = new Set();
+    this._collapsedGroups = new Set();
+    this._monthlyCache = null;
+    this._cacheKey = '';
+    this.dataManager.subscribe(() => { this._invalidateCache(); if (document.getElementById('viewCal').style.display !== 'none') this.render(); });
+  }
+
+  prevMonth() { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this._invalidateCache(); this.render(); }
+  nextMonth() { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this._invalidateCache(); this.render(); }
+  goToToday() { this.currentDate = new Date(); this._invalidateCache(); this.render(); }
+
+  _invalidateCache() { this._monthlyCache = null; this._cacheKey = ''; }
+
+  setMode(mode) {
+    this.mode = mode;
+    document.getElementById('calModeArrange').classList.toggle('active', mode === 'arrange');
+    document.getElementById('calModeAvail').classList.toggle('active', mode === 'avail');
+    document.getElementById('calendarLegendArrange').style.display = mode === 'arrange' ? 'flex' : 'none';
+    document.getElementById('calendarLegendAvail').style.display = mode === 'avail' ? 'flex' : 'none';
+    document.getElementById('availFilterLabel').style.display = mode === 'avail' ? 'inline' : 'none';
+    this.render();
+  }
+
+  setAvailOnlyUnassigned(checked) {
+    this.availOnlyUnassigned = checked;
+    this._invalidateCache();
+    if (this.mode === 'avail') this.render();
+  }
+
+  _isFactoryAvailableOnDate(row, date) {
+    const availStr = this.dataManager.get(row, 'avail');
+    const range = Utils.parseAvailRange(availStr);
+    if (!range.from || !range.to) return false;
+    const from = Utils.parseISO(range.from);
+    const to = Utils.parseISO(range.to);
+    if (!from || !to) return false;
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    target.setHours(0, 0, 0, 0);
+    from.setHours(0, 0, 0, 0);
+    to.setHours(0, 0, 0, 0);
+    return target >= from && target <= to;
+  }
+
+  _getAvailableFactoriesForDate(date) {
+    const rows = this.dataManager.getAll();
+    return rows.reduce((acc, row, idx) => {
+      if (!this._isFactoryAvailableOnDate(row, date)) return acc;
+      if (this.availOnlyUnassigned) {
+        const status = String(this.dataManager.get(row, 'status') || '').trim();
+        const assessor = String(this.dataManager.get(row, 'assessor') || '').trim();
+        const isPending = (status === '' || status === '空白' || status === 'Planned');
+        const noAssessor = (assessor === '' || assessor.toLowerCase() === 'tbd');
+        if (!isPending || !noAssessor) return acc;
+      }
+      acc.push({
+        factory: this.dataManager.get(row, 'factory'),
+        fid: this.dataManager.get(row, 'fid'),
+        assessor: this.dataManager.get(row, 'assessor'),
+        status: this.dataManager.get(row, 'status') || '空白',
+        office: this.dataManager.get(row, 'office'),
+        index: idx
+      });
+      return acc;
+    }, []);
+  }
+
+  _getAvailColor(count) {
+    if (count === 0) return '#e5e7eb';
+    if (count <= 2) return '#bbf7d0';
+    if (count <= 5) return '#fde047';
+    if (count <= 10) return '#fca5a5';
+    return '#ef4444';
+  }
+
+  _getFactoryStatusClass(row) {
+    const status = String(this.dataManager.get(row, 'status') || '').trim();
+    const assessor = String(this.dataManager.get(row, 'assessor') || '').trim();
+    const hasAssessor = assessor && assessor.toLowerCase() !== 'tbd';
+    if (hasAssessor && (status === 'Planned' || status === 'Done' || status === 'Preparing Report')) return 'assigned';
+    if (status === 'Planned' || status === '' || status === '空白') return 'pending';
+    return 'blank';
+  }
+
+  _collectMonthlyData() {
+    const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
+    const cacheKey = `${year}-${month}`;
+    if (this._monthlyCache && this._cacheKey === cacheKey) return this._monthlyCache;
+    
+    const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0);
+    const rows = this.dataManager.getAll();
+    const uniqueFactories = new Map();
+    const dayMap = new Map();
+    
+    // 统计方式与 Assessment 列表一致：有 Available Date 且与当月有交集
+    rows.forEach((row, idx) => {
+      const availStr = this.dataManager.get(row, 'avail');
+      const range = Utils.parseAvailRange(availStr);
+      if (!range.from || !range.to) return;
+
+      const from = Utils.parseISO(range.from);
+      const to = Utils.parseISO(range.to);
+      if (!from || !to) return;
+
+      if (to < firstDay || from > lastDay) return;
+
+      const assessor = String(this.dataManager.get(row, 'assessor') || '').trim();
+      const status = String(this.dataManager.get(row, 'status') || '').trim();
+      const priority = String(this.dataManager.get(row, 'priority') || '').trim();
+
+      if (!uniqueFactories.has(idx)) {
+        uniqueFactories.set(idx, {
+          index: idx,
+          factory: this.dataManager.get(row, 'factory'),
+          fid: this.dataManager.get(row, 'fid'),
+          assessor: assessor,
+          status: status,
+          office: this.dataManager.get(row, 'office') || '',
+          statusClass: this._getFactoryStatusClass(row),
+          availFrom: from,
+          availTo: to,
+          priority: priority
+        });
+      }
+    });
+    
+    // 为每一天填充可用工厂（用于日历格子显示）
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+      const date = new Date(d);
+      const dateStr = Utils.fmt(date);
+      const factories = this._getAvailableFactoriesForDate(date);
+      dayMap.set(dateStr, factories);
+    }
+    
+    this._monthlyCache = { firstDay, lastDay, uniqueFactories, dayMap, rows };
+    this._cacheKey = cacheKey;
+    return this._monthlyCache;
+  }
+
+  render() {
+    const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
+    this.monthHeader.textContent = `${year}年${month + 1}月`;
+    const firstDay = new Date(year, month, 1);
+    const startDate = new Date(firstDay); startDate.setDate(startDate.getDate() - ((firstDay.getDay() + 6) % 7));
+    
+    this.container.innerHTML = '';
+    const today = new Date();
+    const data = this.mode === 'avail' ? this._collectMonthlyData() : null;
+    
+    for (let i = 0; i < 42; i++) {
+      const date = new Date(startDate); date.setDate(startDate.getDate() + i);
+      const dayEl = document.createElement('div'); dayEl.className = 'calendar-day';
+      dayEl.dataset.date = Utils.fmt(date);
+      if (date.getMonth() !== month) dayEl.classList.add('other-month');
+      if (date.toDateString() === today.toDateString()) dayEl.classList.add('today');
+      
+      const dayOfWeek = date.getDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) dayEl.classList.add('weekend');
+      
+      const dayNum = document.createElement('div'); dayNum.className = 'calendar-day-number';
+      dayNum.textContent = date.getDate();
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        const holidayBadge = document.createElement('span');
+        holidayBadge.className = 'holiday-badge';
+        holidayBadge.textContent = dayOfWeek === 0 ? '周日' : '周六';
+        dayNum.appendChild(holidayBadge);
+      }
+      dayEl.appendChild(dayNum);
+      
+      if (this.mode === 'avail' && data) {
+        const dateStr = Utils.fmt(date);
+        const factories = data.dayMap.get(dateStr) || [];
+        const eventsContainer = document.createElement('div'); eventsContainer.className = 'calendar-events';
+
+        if (factories.length > 0) {
+          const headerEl = document.createElement('div');
+          headerEl.className = 'avail-header';
+          headerEl.style.background = this._getAvailColor(factories.length);
+          headerEl.textContent = `${factories.length} 个可用`;
+          headerEl.title = factories.map(e => `${e.factory} (${e.fid || 'N/A'})`).join('\n');
+          headerEl.style.cursor = 'pointer';
+          headerEl.onclick = (e) => {
+            e.stopPropagation();
+            this._scrollTimelineToDate(dateStr);
+          };
+          eventsContainer.appendChild(headerEl);
+
+          const assessorCount = this._countAvailableAssessorsForDate(date);
+          if (assessorCount !== null) {
+            const capEl = document.createElement('div');
+            capEl.className = 'avail-capacity';
+            capEl.textContent = `👤 可排: ${assessorCount}人`;
+            eventsContainer.appendChild(capEl);
+          }
+
+          factories.slice(0, 3).forEach(factory => {
+            const factoryEl = document.createElement('div');
+            factoryEl.className = 'calendar-event avail-factory';
+            factoryEl.dataset.factoryIndex = factory.index;
+            factoryEl.innerHTML = `<div class="factory-name">${Utils.esc(factory.factory)}</div><div class="factory-fid">${Utils.esc(factory.fid || 'N/A')}</div>`;
+            factoryEl.title = `${factory.factory}\nFID: ${factory.fid || 'N/A'}\n状态: ${factory.status}\n点击编辑`;
+            factoryEl.onclick = (e) => { e.stopPropagation(); window.app.openDrawer(factory.index); };
+            factoryEl.addEventListener('mouseenter', () => this._highlightFactoryInCalendar(factory.index, true));
+            factoryEl.addEventListener('mouseleave', () => this._clearHighlights());
+            eventsContainer.appendChild(factoryEl);
+          });
+
+          if (factories.length > 3) {
+            const moreEl = document.createElement('div');
+            moreEl.className = 'avail-header';
+            moreEl.style.fontSize = '9px';
+            moreEl.style.cursor = 'pointer';
+            moreEl.textContent = `+${factories.length - 3} 更多...`;
+            moreEl.onclick = (e) => {
+              e.stopPropagation();
+              this._showAvailPopup(factories, moreEl);
+            };
+            eventsContainer.appendChild(moreEl);
+          }
+        }
+        dayEl.appendChild(eventsContainer);
+      } else {
+        const events = this._getEventsForDate(date);
+        const eventsContainer = document.createElement('div'); eventsContainer.className = 'calendar-events';
+        events.forEach(evt => {
+          const evEl = document.createElement('div');
+          evEl.className = `calendar-event ${evt.statusClass}`;
+          evEl.innerHTML = `<div class="event-factory">${Utils.esc(evt.factory)}</div><div class="event-detail"><span class="event-assessor">${Utils.esc(evt.assessor)}</span><span class="event-status">${Utils.esc(evt.status)}</span></div>`;
+          evEl.onclick = () => window.app.openDrawer(evt.index);
+          eventsContainer.appendChild(evEl);
+        });
+        dayEl.appendChild(eventsContainer);
+      }
+      this.container.appendChild(dayEl);
+    }
+    
+    if (this.mode === 'avail') {
+      this._renderAvailSummary();
+      this._renderTimeline();
+      this._bindTimelineEvents();
+    } else {
+      document.getElementById('availSummary').style.display = 'none';
+      document.getElementById('factoryTimeline').style.display = 'none';
+    }
+  }
+
+  _countAvailableAssessorsForDate(date) {
+    try {
+      const wl = window.app.workloadCalc.calculate(this.dataManager.getAll());
+      const dateDay = date.getDay();
+      if (dateDay === 0 || dateDay === 6) return null;
+      return wl.filter(a => a.load === 'green').length;
+    } catch (e) { return null; }
+  }
+
+  _getEventsForDate(date) {
+    const rows = this.dataManager.getAll(), events = [], dateStr = Utils.fmt(date);
+    rows.forEach((row, idx) => {
+      const assessDate = this.dataManager.get(row, 'assessDate');
+      if (assessDate === dateStr) {
+        const status = String(this.dataManager.get(row, 'status') || '').trim();
+        let statusClass = 'blank';
+        if (status === 'Planned') statusClass = 'planned';
+        else if (status === 'Done') statusClass = 'done';
+        else if (status === 'Pending') statusClass = 'pending';
+        else if (status === 'Preparing Report') statusClass = 'preparing';
+        events.push({ index: idx, factory: this.dataManager.get(row, 'factory'), assessor: this.dataManager.get(row, 'assessor'), status: status || '空白', statusClass, row });
+      }
+    });
+    return events;
+  }
+
+  _renderAvailSummary() {
+    const summaryEl = document.getElementById('availSummary');
+    const data = this._collectMonthlyData();
+    const allFactories = [...data.uniqueFactories.values()];
+    
+    const todo = allFactories.filter(f => {
+      const st = (f.status || '').trim();
+      return st === '' || st === '空白' || st === 'Pending';
+    });
+    const assigned = allFactories.filter(f => {
+      const st = (f.status || '').trim();
+      return st === 'Planned' || st === 'Preparing Report';
+    });
+    const done = allFactories.filter(f => {
+      const st = (f.status || '').trim();
+      return st === 'Done';
+    });
+    const month = this.currentDate.getMonth();
+    
+    summaryEl.style.display = 'flex';
+    summaryEl.innerHTML = `
+      <span class="summary-total">📊 ${month + 1}月共 <b>${allFactories.length}</b> 家工厂可用</span>
+      <span class="summary-breakdown">
+        <span class="summary-item clickable" data-filter="todo" title="点击筛选待分配工厂">
+          <span class="summary-dot" style="background:#f59e0b;"></span>待分配: ${todo.length}
+        </span>
+        <span class="summary-item clickable" data-filter="assigned" title="点击筛选已分配工厂">
+          <span class="summary-dot" style="background:#3b82f6;"></span>已分配: ${assigned.length}
+        </span>
+        <span class="summary-item clickable" data-filter="done" title="点击筛选已完成工厂">
+          <span class="summary-dot" style="background:#22c55e;"></span>已完成: ${done.length}
+        </span>
+      </span>
+    `;
+    
+    summaryEl.querySelectorAll('.summary-item.clickable').forEach(item => {
+      item.addEventListener('click', () => {
+        const filter = item.dataset.filter;
+        this._filterListBySummary(filter, todo, assigned, done);
+      });
+    });
+  }
+
+  _filterListBySummary(filter, todo, assigned, done) {
+    window.app._switchTab('list');
+    window.app.state.q = '';
+    document.getElementById('search').value = '';
+    
+    if (filter === 'todo') {
+      const indices = todo.map(f => f.index);
+      window.app.state._availIndices = new Set(indices);
+    } else if (filter === 'assigned') {
+      const indices = assigned.map(f => f.index);
+      window.app.state._availIndices = new Set(indices);
+    } else if (filter === 'done') {
+      const indices = done.map(f => f.index);
+      window.app.state._availIndices = new Set(indices);
+    }
+    
+    window.app.renderAll();
+    const month = this.currentDate.getMonth() + 1;
+    const labels = { todo: '待分配', assigned: '已分配', done: '已完成' };
+    window.app.showError(`✅ 已筛选${month}月${labels[filter] || filter}工厂`);
+  }
+
+  _getWeekLabels() {
+    const data = this._collectMonthlyData();
+    const firstDay = data.firstDay, lastDay = data.lastDay;
+    const labels = [];
+    let weekStart = new Date(firstDay);
+    while (weekStart.getDay() !== 1) weekStart.setDate(weekStart.getDate() - 1);
+    
+    while (weekStart <= lastDay) {
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      const wsM = weekStart.getMonth() + 1, wsD = weekStart.getDate();
+      const weM = weekEnd.getMonth() + 1, weD = weekEnd.getDate();
+      labels.push({ label: `W${wsM}/${wsD}-${weM}/${weD}`, start: new Date(weekStart), end: new Date(weekEnd) });
+      weekStart.setDate(weekStart.getDate() + 7);
+    }
+    return labels;
+  }
+
+  _renderTimeline() {
+    const timelineEl = document.getElementById('factoryTimeline');
+    const bodyEl = document.getElementById('timelineBody');
+    const weekLabelsEl = document.getElementById('timelineWeekLabels');
+    
+    const data = this._collectMonthlyData();
+    const firstDay = data.firstDay, lastDay = data.lastDay;
+    const totalDays = Math.ceil((lastDay - firstDay) / (1000 * 60 * 60 * 24)) + 1;
+    
+    const weekLabels = this._getWeekLabels();
+    weekLabelsEl.innerHTML = weekLabels.map(w => `<div class="timeline-week-label">${w.label}</div>`).join('');
+    
+    let factoryData = [...data.uniqueFactories.values()];
+    
+    const searchQ = this._timelineSearch.toLowerCase();
+    if (searchQ) {
+      factoryData = factoryData.filter(fd => {
+        const hay = [fd.factory, fd.fid, fd.assessor, fd.office].join(' ').toLowerCase();
+        return hay.includes(searchQ);
+      });
+    }
+    
+    if (this._timelineUnassignedOnly) {
+      factoryData = factoryData.filter(fd => fd.statusClass !== 'assigned');
+    }
+    
+    factoryData.sort((a, b) => {
+      const pa = parseInt(a.priority) || 999;
+      const pb = parseInt(b.priority) || 999;
+      if (pa !== pb) return pa - pb;
+      return a.factory.localeCompare(b.factory);
+    });
+    
+    if (factoryData.length === 0) {
+      bodyEl.innerHTML = `
+        <div class="timeline-empty">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">${searchQ ? '没有匹配的工厂' : '本月暂无工厂在可用窗口内'}</div>
+          <div class="empty-desc">${searchQ ? '请尝试其他搜索关键词' : '请检查 Factory Available Week 或切换到其他月份查看'}</div>
+        </div>
+      `;
+      timelineEl.style.display = 'block';
+      document.getElementById('batchBar').classList.remove('show');
+      return;
+    }
+    
+    const renderRow = (fd) => {
+      const star = fd.priority && parseInt(fd.priority) <= 3 ? '<span class="timeline-priority-star">⭐</span>' : '';
+      const fromLabel = fd.availFrom ? `${fd.availFrom.getMonth() + 1}/${fd.availFrom.getDate()}` : '?';
+      const toLabel = fd.availTo ? `${fd.availTo.getMonth() + 1}/${fd.availTo.getDate()}` : '?';
+      const assessorDisplay = fd.assessor && fd.assessor.toLowerCase() !== 'tbd' ? ` → ${Utils.esc(fd.assessor)}` : ' → 待分配';
+      const checked = this._selectedFactories.has(fd.index) ? 'checked' : '';
+      
+      let leftPct = 0, widthPct = 0;
+      if (fd.availFrom && fd.availTo) {
+        const fromOffset = Math.max(0, (fd.availFrom - firstDay) / (1000 * 60 * 60 * 24));
+        const toOffset = Math.min(totalDays - 1, (fd.availTo - firstDay) / (1000 * 60 * 60 * 24));
+        leftPct = (fromOffset / totalDays) * 100;
+        widthPct = ((toOffset - fromOffset + 1) / totalDays) * 100;
+      }
+      
+      return `
+        <div class="timeline-row" data-factory-index="${fd.index}"
+             onmouseenter="window.app.calendar._onTimelineRowHover(event, ${fd.index})"
+             onmouseleave="window.app.calendar._onTimelineRowLeave()">
+          <div class="timeline-factory-info">
+            <input type="checkbox" class="timeline-checkbox" ${checked} 
+                   onclick="event.stopPropagation();window.app.calendar._toggleFactorySelection(${fd.index},this.checked)" 
+                   title="选择此工厂">
+            ${star}
+            <span class="timeline-factory-name" title="${Utils.esc(fd.factory)}">${Utils.esc(fd.factory)}</span>
+            <span class="timeline-factory-fid">${Utils.esc(fd.fid || 'N/A')}</span>
+          </div>
+          <div class="timeline-bar-container" onclick="window.app.openDrawer(${fd.index})">
+            <div class="timeline-bar-bg">
+              <div class="timeline-week-markers">${weekLabels.map(() => '<div class="timeline-week-marker"></div>').join('')}</div>
+            </div>
+            <div class="timeline-bar-fill ${fd.statusClass}" style="left:${leftPct}%;width:${widthPct}%;"></div>
+            <div class="timeline-bar-label">${fromLabel} ~ ${toLabel} ${assessorDisplay}</div>
+          </div>
+        </div>
+      `;
+    };
+    
+    if (this._timelineGroupByOffice) {
+      const groups = new Map();
+      factoryData.forEach(fd => {
+        const office = fd.office || '未分类';
+        if (!groups.has(office)) groups.set(office, []);
+        groups.get(office).push(fd);
+      });
+      
+      const sortedGroups = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      
+      bodyEl.innerHTML = sortedGroups.map(([office, fds]) => {
+        const isCollapsed = this._collapsedGroups.has(office);
+        return `
+          <div class="timeline-group-header ${isCollapsed ? 'collapsed' : ''}" data-group="${Utils.esc(office)}"
+               onclick="window.app.calendar._toggleGroup('${Utils.esc(office)}')">
+            <span class="group-toggle">▼</span>
+            📍 ${Utils.esc(office)}
+            <span class="timeline-group-count">${fds.length}家</span>
+          </div>
+          <div class="timeline-group-body ${isCollapsed ? 'collapsed' : ''}" data-group-body="${Utils.esc(office)}">
+            ${fds.map(renderRow).join('')}
+          </div>
+        `;
+      }).join('');
+    } else {
+      bodyEl.innerHTML = factoryData.map(renderRow).join('');
+    }
+    
+    timelineEl.style.display = 'block';
+    this._updateBatchBar();
+  }
+
+  _bindTimelineEvents() {
+    const searchInput = document.getElementById('timelineSearch');
+    const unassignedCb = document.getElementById('timelineUnassignedOnly');
+    const groupCb = document.getElementById('timelineGroupByOffice');
+    
+    if (searchInput) {
+      const handler = () => {
+        this._timelineSearch = searchInput.value;
+        this._renderTimeline();
+      };
+      searchInput.oninput = handler;
+    }
+    if (unassignedCb) {
+      unassignedCb.onchange = () => {
+        this._timelineUnassignedOnly = unassignedCb.checked;
+        this._renderTimeline();
+      };
+    }
+    if (groupCb) {
+      groupCb.onchange = () => {
+        this._timelineGroupByOffice = groupCb.checked;
+        this._renderTimeline();
+      };
+    }
+    
+    const btnBatchAssign = document.getElementById('btnBatchAssign');
+    const btnBatchClear = document.getElementById('btnBatchClear');
+    if (btnBatchAssign) btnBatchAssign.onclick = () => this._batchAssign();
+    if (btnBatchClear) btnBatchClear.onclick = () => this._clearSelection();
+    
+    this._populateBatchAssessorSelect();
+  }
+
+  _populateBatchAssessorSelect() {
+    const select = document.getElementById('batchAssessor');
+    if (!select) return;
+    const assessors = this.dataManager.getAllAssessors();
+    select.innerHTML = assessors.map(a => `<option value="${Utils.esc(a)}">${Utils.esc(a)}</option>`).join('');
+  }
+
+  _toggleGroup(office) {
+    if (this._collapsedGroups.has(office)) {
+      this._collapsedGroups.delete(office);
+    } else {
+      this._collapsedGroups.add(office);
+    }
+    const header = document.querySelector(`.timeline-group-header[data-group="${office}"]`);
+    const body = document.querySelector(`[data-group-body="${office}"]`);
+    if (header) header.classList.toggle('collapsed');
+    if (body) body.classList.toggle('collapsed');
+  }
+
+  _toggleFactorySelection(index, checked) {
+    if (checked) {
+      this._selectedFactories.add(index);
+    } else {
+      this._selectedFactories.delete(index);
+    }
+    this._updateBatchBar();
+    const row = document.querySelector(`.timeline-row[data-factory-index="${index}"]`);
+    if (row) row.classList.toggle('selected', checked);
+  }
+
+  _clearSelection() {
+    this._selectedFactories.clear();
+    document.querySelectorAll('.timeline-checkbox').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.timeline-row.selected').forEach(r => r.classList.remove('selected'));
+    this._updateBatchBar();
+  }
+
+  _updateBatchBar() {
+    const bar = document.getElementById('batchBar');
+    const countEl = document.getElementById('batchCount');
+    if (!bar || !countEl) return;
+    
+    if (this._selectedFactories.size > 0) {
+      bar.classList.add('show');
+      countEl.textContent = `已选 ${this._selectedFactories.size} 家`;
+    } else {
+      bar.classList.remove('show');
+    }
+  }
+
+  async _batchAssign() {
+    if (this._selectedFactories.size === 0) return;
+    const select = document.getElementById('batchAssessor');
+    const assessor = select ? select.value : '';
+    if (!assessor) {
+      window.app.showError('请选择 Assessor');
+      return;
+    }
+    
+    const rows = this.dataManager.getAll();
+    let count = 0;
+    this._selectedFactories.forEach(index => {
+      const row = rows[index];
+      if (!row) return;
+      this.dataManager.set(row, 'assessor', assessor);
+      const st = String(this.dataManager.get(row, 'status') || '').trim();
+      if (!st || st === '空白') this.dataManager.set(row, 'status', 'Planned');
+      count++;
+    });
+    
+    this._selectedFactories.clear();
+    this._updateBatchBar();
+    this._invalidateCache();
+    this.dataManager._saveToLocalStorage();
+    await this.dataManager._syncToSupabase();
+    this.dataManager.notify();
+    window.app.showError(`✅ 已将 ${count} 家工厂分配给 ${assessor}`);
+  }
+
+  _onTimelineRowHover(event, factoryIndex) {
+    this._highlightFactoryInCalendar(factoryIndex, true);
+    this._showTimelineTooltip(event, factoryIndex);
+  }
+
+  _onTimelineRowLeave() {
+    this._clearHighlights();
+    this._hideTimelineTooltip();
+  }
+
+  _showTimelineTooltip(event, factoryIndex) {
+    const rows = this.dataManager.getAll();
+    const row = rows[factoryIndex];
+    if (!row) return;
+    
+    const tooltip = document.getElementById('timelineTooltip');
+    const factory = this.dataManager.get(row, 'factory');
+    const fid = this.dataManager.get(row, 'fid');
+    const assessor = this.dataManager.get(row, 'assessor');
+    const status = this.dataManager.get(row, 'status') || '空白';
+    const office = this.dataManager.get(row, 'office');
+    const avail = this.dataManager.get(row, 'avail');
+    const priority = this.dataManager.get(row, 'priority');
+    
+    tooltip.innerHTML = `
+      <div><span class="tt-label">工厂:</span> <span class="tt-value">${Utils.esc(factory)}</span></div>
+      <div><span class="tt-label">FID:</span> <span class="tt-value">${Utils.esc(fid || 'N/A')}</span></div>
+      <div><span class="tt-label">可用窗口:</span> <span class="tt-value">${Utils.esc(avail || 'N/A')}</span></div>
+      <div><span class="tt-label">Assessor:</span> <span class="tt-value">${Utils.esc(assessor || '待分配')}</span></div>
+      <div><span class="tt-label">状态:</span> <span class="tt-value">${Utils.esc(status)}</span></div>
+      <div><span class="tt-label">Office:</span> <span class="tt-value">${Utils.esc(office || 'N/A')}</span></div>
+      ${priority ? `<div><span class="tt-label">Priority:</span> <span class="tt-value">${Utils.esc(priority)}</span></div>` : ''}
+    `;
+    
+    let left = event.clientX + 14;
+    let top = event.clientY - 10;
+    if (left + 280 > window.innerWidth) left = event.clientX - 290;
+    if (top + 200 > window.innerHeight) top = window.innerHeight - 210;
+    if (left < 10) left = 10;
+    if (top < 10) top = 10;
+    
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    tooltip.classList.add('show');
+  }
+
+  _hideTimelineTooltip() {
+    document.getElementById('timelineTooltip').classList.remove('show');
+  }
+
+  _scrollTimelineToDate(dateStr) {
+    const bodyEl = document.getElementById('timelineBody');
+    if (!bodyEl) return;
+    
+    const rows = bodyEl.querySelectorAll('.timeline-row');
+    let firstMatch = null;
+    rows.forEach(row => {
+      const idx = parseInt(row.dataset.factoryIndex);
+      if (isNaN(idx)) return;
+      const data = this._collectMonthlyData();
+      const fd = data.uniqueFactories.get(idx);
+      if (!fd || !fd.availFrom || !fd.availTo) return;
+      const date = Utils.parseISO(dateStr);
+      if (!date) return;
+      date.setHours(0, 0, 0, 0);
+      const f = new Date(fd.availFrom); f.setHours(0, 0, 0, 0);
+      const t = new Date(fd.availTo); t.setHours(0, 0, 0, 0);
+      if (date >= f && date <= t && !firstMatch) {
+        firstMatch = row;
+      }
+    });
+    
+    if (firstMatch) {
+      firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const idx = parseInt(firstMatch.dataset.factoryIndex);
+      this._highlightFactoryInCalendar(idx, true);
+      setTimeout(() => this._clearHighlights(), 2000);
+    }
+  }
+
+  _highlightFactoryInCalendar(factoryIndex, highlight) {
+    this._clearHighlights();
+    if (!highlight) return;
+    
+    const data = this._collectMonthlyData();
+    const fd = data.uniqueFactories.get(factoryIndex);
+    if (!fd || !fd.availFrom || !fd.availTo) return;
+    
+    const dayEls = this.container.querySelectorAll('.calendar-day');
+    dayEls.forEach(dayEl => {
+      const dateStr = dayEl.dataset.date;
+      if (!dateStr) return;
+      const date = Utils.parseISO(dateStr);
+      if (!date) return;
+      date.setHours(0, 0, 0, 0);
+      const f = new Date(fd.availFrom); f.setHours(0, 0, 0, 0);
+      const t = new Date(fd.availTo); t.setHours(0, 0, 0, 0);
+      if (date >= f && date <= t) {
+        dayEl.classList.add('highlight-avail');
+      }
+    });
+    
+    const timelineRows = document.querySelectorAll('.timeline-row');
+    timelineRows.forEach(tr => {
+      if (parseInt(tr.dataset.factoryIndex) === factoryIndex) {
+        tr.classList.add('highlight');
+      }
+    });
+  }
+
+  _clearHighlights() {
+    this.container.querySelectorAll('.calendar-day.highlight-avail').forEach(el => el.classList.remove('highlight-avail'));
+    document.querySelectorAll('.timeline-row.highlight').forEach(el => el.classList.remove('highlight'));
+  }
+
+  _showAvailPopup(factories, anchorEl) {
+    this._hideAvailPopup();
+    const popup = document.getElementById('availPopup');
+    
+    popup.innerHTML = `
+      <button class="avail-popup-close" onclick="window.app.calendar._hideAvailPopup()">✕</button>
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;">${factories.length} 个可用工厂</div>
+      ${factories.map(f => `
+        <div class="avail-popup-item" onclick="window.app.openDrawer(${f.index});window.app.calendar._hideAvailPopup();">
+          <span class="popup-factory">${Utils.esc(f.factory)}</span>
+          <span class="popup-status" style="color:${f.assessor && f.assessor.toLowerCase() !== 'tbd' ? '#22c55e' : '#f59e0b'}">${f.assessor && f.assessor.toLowerCase() !== 'tbd' ? '🟢已分配' : '🟡待分配'}</span>
+        </div>
+      `).join('')}
+    `;
+    
+    const rect = anchorEl.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.bottom + 4;
+    
+    if (left + 320 > window.innerWidth) left = window.innerWidth - 330;
+    if (top + 300 > window.innerHeight) top = rect.top - 310;
+    if (left < 10) left = 10;
+    if (top < 10) top = 10;
+    
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+    popup.classList.add('show');
+    
+    this._popupCloseHandler = (e) => {
+      if (!popup.contains(e.target) && e.target !== anchorEl) {
+        this._hideAvailPopup();
+      }
+    };
+    setTimeout(() => document.addEventListener('click', this._popupCloseHandler), 0);
+  }
+
+  _hideAvailPopup() {
+    const popup = document.getElementById('availPopup');
+    popup.classList.remove('show');
+    if (this._popupCloseHandler) {
+      document.removeEventListener('click', this._popupCloseHandler);
+      this._popupCloseHandler = null;
+    }
+  }
+}
+
+// ============================================================
+// CSV 解析器
+// ============================================================
+const CSVParser = {
+  parse(text) {
+    const out = []; let i = 0, field = '', row = [], inQ = false;
+    while (i < text.length) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        field += c; i++; continue;
+      } else {
+        if (c === '"') { inQ = true; i++; continue; }
+        if (c === ',') { row.push(field); field = ''; i++; continue; }
+        if (c === '\n') { row.push(field); out.push(row); row = []; field = ''; i++; continue; }
+        if (c === '\r') { i++; continue; }
+        field += c; i++; continue;
+      }
+    }
+    row.push(field); out.push(row);
+    return out.filter(r => r.some(x => String(x || '').trim() !== ''));
+  },
+  normHeader(h) { return String(h || '').trim().replace(/\s+/g, ' ').toLowerCase(); },
+  headerIndexMap(header) { const m = new Map(); header.forEach((h, i) => m.set(this.normHeader(h), i)); return m; },
+  cell(row, idx) { return (idx === undefined || idx === null || idx < 0) ? '' : String(row[idx] ?? ''); }
+};
+
+// ============================================================
+// 主应用类
+// ============================================================
+class ScheduleApp {
+  constructor() {
+    this.dataManager = new SupabaseDataManager();
+    this.workloadCalc = new WorkloadCalculator(this.dataManager);
+    this.calendar = new CalendarView(this.dataManager);
+    this.backupManager = new BackupManager(this.dataManager);
+    this.state = { office: '', assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null, sortField: '', sortDir: 'asc' };
+    this.virtualScrollers = {};
+    this.init();
+  }
+
+  async init() {
+    // 等待 DataManager 初始化完成（包括从 Supabase 加载数据）
+    await this.dataManager.waitForInit();
+    
+    this._initVirtualScrollers();
+    this._bindEvents();
+    this._initFilters();
+    this._loadPendingColumnWidths();
+    this._loadAssessorColumnWidths();
+    this.dataManager.subscribe(() => this.renderAll());
+    this.renderAll();
+
+    document.addEventListener('conflict-detected', () => this._showConflictDialog());
+  }
+
+  _initVirtualScrollers() {
+    // Assessor 表格虚拟滚动
+    this.virtualScrollers.assessor = new VirtualScroller('assessorTable', {
+      rowHeight: 26,
+      emptyMessage: '暂无 Assessor 数据',
+      emptyIcon: '👤',
+      enableColumnResize: true,
+      onColumnResize: (widths) => {
+        try {
+          localStorage.setItem('assessor_column_widths', JSON.stringify(widths));
+        } catch (e) {}
+      },
+      renderRow: (row, idx) => {
+        const badge = row.load === 'green' ? 'green' : (row.load === 'yellow' ? 'yellow' : 'red');
+        const text = row.load === 'green' ? '可安排' : (row.load === 'yellow' ? '接近上限' : '超负荷');
+        const w = this._getAssessorColumnWidths();
+        return `<div class="virtual-cell" style="width:${w[0]}px;"><b>${Utils.esc(row.assessor)}</b></div><div class="virtual-cell" style="width:${w[1]}px;text-align:center;">${row.plannedThis}</div><div class="virtual-cell" style="width:${w[2]}px;text-align:center;">${row.doneThis}</div><div class="virtual-cell" style="width:${w[3]}px;text-align:center;">${row.plannedNext}</div><div class="virtual-cell" style="width:${w[4]}px;"><span class="badge ${badge}">${text}</span></div><div class="virtual-cell" style="width:${w[5]}px;"><button class="btn" onclick="window.app.openAssessorDrawer('${Utils.esc(row.assessor)}')">编辑</button></div>`;
+      }
+    });
+
+    // Pending 表格虚拟滚动
+    this.virtualScrollers.pending = new VirtualScroller('pendingTable', {
+      rowHeight: 44,
+      emptyMessage: '没有待分配的工厂',
+      emptyIcon: '✅',
+      enableColumnResize: true,
+      onColumnResize: (widths) => {
+        try {
+          localStorage.setItem('pending_column_widths', JSON.stringify(widths));
+        } catch (e) {}
+      },
+      renderRow: (row, idx) => {
+        const st = String(this.dataManager.get(row, 'status') || '').trim();
+        const allData = this.dataManager.getAll();
+        const originalIndex = allData.indexOf(row) + 1;
+        const rowIndex = allData.indexOf(row);
+        const w = this._getPendingColumnWidths();
+        return `<div class="virtual-cell" style="width:${w[0]}px;text-align:center;">${originalIndex}</div><div class="virtual-cell" style="width:${w[1]}px;">${Utils.esc(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" style="width:${w[2]}px;">${Utils.esc(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" style="width:${w[3]}px;">${Utils.esc(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" style="width:${w[4]}px;">${this._statusBadge(st)}</div><div class="virtual-cell" style="width:${w[5]}px;"><button class="btn" onclick="window.app.openDrawer(${rowIndex})">安排</button></div>`;
+      }
+    });
+
+    // 主表格虚拟滚动
+    this.virtualScrollers.main = new VirtualScroller('mainTable', {
+      rowHeight: 44,
+      emptyMessage: '没有匹配的记录，试试调整筛选条件',
+      emptyIcon: '📋',
+      renderRow: (row, idx) => {
+        const st = String(this.dataManager.get(row, 'status') || '').trim();
+        const widths = this._getColumnWidths();
+        // 计算报告时间和状态灯（只在Preparing Report时显示灯）
+        const reportDate = this.dataManager.get(row, 'reportDate');
+        const assessDate = this.dataManager.get(row, 'assessDate');
+        const reportInfo = this._calcReportDueInfo(reportDate, assessDate, st);
+        const remarks = this.dataManager.get(row, 'remarks') || '';
+        const zebra = idx % 2 === 0 ? '' : 'background:#f9fafb;';
+        const hl = (text) => this._highlightSearch(text);
+        const allData = this.dataManager.getAll();
+        const originalIndex = allData.indexOf(row) + 1;
+        const rowIndex = allData.indexOf(row);
+        return `<div class="virtual-cell" data-col="0" style="width:${widths[0]}px;text-align:center;${zebra}">${originalIndex}</div><div class="virtual-cell" data-col="1" style="width:${widths[1]}px;${zebra}">${hl(this.dataManager.get(row, 'supplier'))}</div><div class="virtual-cell" data-col="2" style="width:${widths[2]}px;${zebra}">${hl(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" data-col="3" style="width:${widths[3]}px;${zebra}">${hl(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" data-col="4" style="width:${widths[4]}px;${zebra}">${hl(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" data-col="5" style="width:${widths[5]}px;${zebra}">${hl(this.dataManager.get(row, 'assessDate'))}</div><div class="virtual-cell" data-col="6" style="width:${widths[6]}px;${zebra}">${this._statusBadge(st)}</div><div class="virtual-cell" data-col="7" style="width:${widths[7]}px;${zebra}">${hl(this.dataManager.get(row, 'assessor'))}</div><div class="virtual-cell" data-col="8" style="width:${widths[8]}px;${zebra}">${reportInfo.date}${reportInfo.light}</div><div class="virtual-cell" data-col="9" style="width:${widths[9]}px;text-align:center;${zebra}">${hl(this.dataManager.get(row, 'score'))}</div><div class="virtual-cell" data-col="10" style="width:${widths[10]}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${zebra}" title="${Utils.esc(remarks)}">${hl(remarks)}</div><div class="virtual-cell" data-col="11" style="width:${widths[11]}px;${zebra}"><button class="btn" onclick="window.app.openDrawer(${rowIndex})">安排/编辑</button></div><div class="virtual-cell" data-col="12" style="width:${widths[12]}px;text-align:center;${zebra}"><button class="btn" style="background:#2563eb;color:#fff;font-size:11px;padding:2px 6px;" onclick="window.app.duplicateRow(${rowIndex})">复制</button></div><div class="virtual-cell" data-col="13" style="width:${widths[13]}px;text-align:center;${zebra}"><button class="btn" style="background:#dc2626;color:#fff;" onclick="window.app.deleteRow(${rowIndex})">删除</button></div>`;
+      }
+    });
+  }
+
+  _initFilters() {
+    const offices = Utils.uniq(this.dataManager.getAll().map(r => this.dataManager.get(r, 'office'))).sort();
+    document.getElementById('filterOffice').innerHTML = `<option value="">全部 Office</option>` + offices.map(o => `<option value="${Utils.esc(o)}">${Utils.esc(o)}</option>`).join('');
+    document.getElementById('filterOffice').value = this.state.office;
+    
+    // 使用 getAllAssessors 获取所有 Assessor（包括自定义的）
+    const assessors = this.dataManager.getAllAssessors();
+    document.getElementById('filterAssessor').innerHTML = `<option value="">全部 Assessor</option>` + assessors.map(a => `<option value="${Utils.esc(a)}">${Utils.esc(a)}</option>`).join('');
+    document.getElementById('filterAssessor').value = this.state.assessor;
+  }
+
+  _bindEvents() {
+    document.getElementById('filterOffice').addEventListener('change', e => { this.state.office = e.target.value; this._initFilters(); this.renderAll(); });
+    document.getElementById('filterAssessor').addEventListener('change', e => { this.state.assessor = e.target.value; this.renderAll(); });
+    document.getElementById('filterStatus').addEventListener('change', e => { this.state.status = e.target.value; this.renderAll(); });
+    
+    const debouncedSearch = Utils.debounce((value) => { this.state.q = value; this.renderAll(); }, Config.DEBOUNCE_DELAY);
+    document.getElementById('search').addEventListener('input', e => debouncedSearch(e.target.value));
+    
+    document.getElementById('btnReset').addEventListener('click', () => { this.state = { office: '', assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null, sortField: '', sortDir: 'asc' }; document.getElementById('search').value = ''; this._initFilters(); this._updateSortArrows(); this.renderAll(); });
+    document.getElementById('tabList').addEventListener('click', () => this._switchTab('list'));
+    document.getElementById('tabCal').addEventListener('click', () => this._switchTab('calendar'));
+    document.getElementById('prevMonth').addEventListener('click', () => this.calendar.prevMonth());
+    document.getElementById('nextMonth').addEventListener('click', () => this.calendar.nextMonth());
+    document.getElementById('todayBtn').addEventListener('click', () => this.calendar.goToToday());
+    document.getElementById('calModeArrange').addEventListener('click', () => this.calendar.setMode('arrange'));
+    document.getElementById('calModeAvail').addEventListener('click', () => this.calendar.setMode('avail'));
+    document.getElementById('availUnassignedOnly').addEventListener('change', (e) => this.calendar.setAvailOnlyUnassigned(e.target.checked));
+    document.getElementById('dClose').addEventListener('click', () => this.closeDrawer());
+    document.getElementById('btnSave').addEventListener('click', () => this.saveDrawer());
+    document.getElementById('assessorDrawerClose').addEventListener('click', () => this.closeAssessorDrawer());
+    document.getElementById('btnSaveAssessor').addEventListener('click', () => this.saveAssessorEdit());
+    document.getElementById('btnDeleteAssessor').addEventListener('click', () => this.deleteAssessor());
+    
+    // 添加新 Assessor 事件绑定
+    document.getElementById('btnAddAssessor').addEventListener('click', () => this.openAddAssessorDrawer());
+    document.getElementById('addAssessorDrawerClose').addEventListener('click', () => this.closeAddAssessorDrawer());
+    document.getElementById('btnCancelAddAssessor').addEventListener('click', () => this.closeAddAssessorDrawer());
+    document.getElementById('btnSaveNewAssessor').addEventListener('click', () => this.saveNewAssessor());
+    
+    document.getElementById('btnAddFactory').addEventListener('click', () => this.openNewFactoryDrawer());
+    
+    // 下拉菜单：点击外部关闭
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => menu.classList.remove('show'));
+      }
+    });
+    document.getElementById('btnSelectBackupFolder').addEventListener('click', () => this.selectBackupFolder());
+    document.getElementById('btnExportAssessment').addEventListener('click', () => this.exportAssessmentList());
+    
+    document.getElementById('fileImportCsv').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) this.importOneCSV(f); e.target.value = ''; });
+    document.getElementById('fileImportJson').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) this.importAllJSON(f); e.target.value = ''; });
+    
+    // 初始化列宽调整功能
+    this._initColumnResize();
+
+    // 列排序事件绑定
+    document.querySelectorAll('#mainTable .virtual-cell.sortable').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const field = cell.dataset.sort;
+        if (this.state.sortField === field) {
+          this.state.sortDir = this.state.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.state.sortField = field;
+          this.state.sortDir = 'asc';
+        }
+        this._updateSortArrows();
+        this.renderAll();
+      });
+    });
+    
+    // 初始化备份状态显示
+    this._updateBackupStatus();
+    
+    // 初始化日期输入自动格式化
+    this._initDateInputs();
+    
+    // 初始化日期选择器
+    this._initDatePicker();
+    
+    // 初始化键盘快捷键
+    this._initKeyboardShortcuts();
+  }
+
+  // 初始化日期输入自动格式化（支持 2025-1-1 自动补全为 2025-01-01）
+  _initDateInputs() {
+    const dateInputs = ['fAvailFrom', 'fAvailTo', 'fDate', 'fReportDate'];
+    
+    dateInputs.forEach(id => {
+      const input = document.getElementById(id);
+      if (!input) return;
+      
+      // 失去焦点时自动格式化
+      input.addEventListener('blur', () => {
+        const value = input.value.trim();
+        if (!value) return;
+        
+        // 尝试解析并格式化日期
+        const formatted = this._formatDateInput(value);
+        if (formatted) {
+          input.value = formatted;
+        }
+      });
+      
+      // 输入时只允许数字和横线
+      input.addEventListener('input', (e) => {
+        // 移除非数字和非横线字符
+        let value = e.target.value.replace(/[^0-9\-]/g, '');
+        
+        // 限制格式：只允许一个横线，最多10个字符
+        const parts = value.split('-');
+        if (parts.length > 3) {
+          value = parts.slice(0, 3).join('-');
+        }
+        
+        e.target.value = value;
+      });
+    });
+  }
+  
+  // 格式化日期输入（支持 2025-1-1 -> 2025-01-01）
+  _formatDateInput(value) {
+    // 移除所有空格
+    value = value.trim();
+    
+    // 匹配各种格式：2025-1-1, 2025/1/1, 2025.1.1, 20250101
+    const patterns = [
+      // 2025-1-1 或 2025-01-01
+      { regex: /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/, separator: '-' },
+      // 2025.1.1
+      { regex: /^(\d{4})\.(\d{1,2})\.(\d{1,2})$/, separator: '-' },
+      // 20250101
+      { regex: /^(\d{4})(\d{2})(\d{2})$/, separator: '-' }
+    ];
+    
+    for (const pattern of patterns) {
+      const match = value.match(pattern.regex);
+      if (match) {
+        const year = match[1];
+        let month = match[2];
+        let day = match[3];
+        
+        // 补零
+        month = month.padStart(2, '0');
+        day = day.padStart(2, '0');
+        
+        // 验证日期有效性
+        const date = new Date(`${year}-${month}-${day}`);
+        if (date.getFullYear() == year && 
+            date.getMonth() + 1 == parseInt(month) && 
+            date.getDate() == parseInt(day)) {
+          return `${year}-${month}-${day}`;
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  // 初始化日期选择器
+  _initDatePicker() {
+    const popup = document.getElementById('datePickerPopup');
+    if (!popup) return;
+    
+    // 配置4个日期字段
+    const datePickers = [
+      { btnId: 'btnDatePickerFrom', inputId: 'fAvailFrom' },
+      { btnId: 'btnDatePickerTo', inputId: 'fAvailTo' },
+      { btnId: 'btnDatePicker', inputId: 'fDate' },
+      { btnId: 'btnReportDatePicker', inputId: 'fReportDate' }
+    ];
+    
+    let currentDate = new Date();
+    let selectedDate = null;
+    let activeInput = null;
+    
+    // 关闭弹出层
+    const closePopup = () => {
+      popup.style.display = 'none';
+      activeInput = null;
+    };
+    
+    // 为每个日期选择按钮绑定事件
+    datePickers.forEach(({ btnId, inputId }) => {
+      const btn = document.getElementById(btnId);
+      const input = document.getElementById(inputId);
+      
+      if (!btn || !input) return;
+      
+      // 打开日期选择器
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        activeInput = input;
+        
+        // 如果输入框有值，尝试解析
+        const inputValue = input.value.trim();
+        if (inputValue) {
+          const parsed = this._formatDateInput(inputValue);
+          if (parsed) {
+            currentDate = new Date(parsed);
+            selectedDate = parsed;
+          }
+        }
+        
+        this._renderDatePicker(currentDate, selectedDate);
+        
+        // 定位弹出层
+        const rect = btn.getBoundingClientRect();
+        const popupHeight = 320; // 日历弹出层大约高度
+        popup.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
+        // 如果下方空间不足，则显示在按钮上方
+        if (rect.bottom + popupHeight > window.innerHeight) {
+          popup.style.top = Math.max(10, rect.top - popupHeight) + 'px';
+        } else {
+          popup.style.top = (rect.bottom + 8) + 'px';
+        }
+        popup.style.display = 'block';
+      });
+    });
+    
+    document.getElementById('dpClose').addEventListener('click', closePopup);
+    
+    // 点击外部关闭
+    document.addEventListener('click', (e) => {
+      const isButton = datePickers.some(({ btnId }) => {
+        const btn = document.getElementById(btnId);
+        return btn && (e.target === btn || btn.contains(e.target));
+      });
+      
+      if (!popup.contains(e.target) && !isButton) {
+        closePopup();
+      }
+    });
+    
+    // 上一个月
+    document.getElementById('dpPrevMonth').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      this._renderDatePicker(currentDate, selectedDate);
+    });
+    
+    // 下一个月
+    document.getElementById('dpNextMonth').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      this._renderDatePicker(currentDate, selectedDate);
+    });
+    
+    // 今天
+    document.getElementById('dpToday').addEventListener('click', () => {
+      if (!activeInput) return;
+      const today = new Date();
+      const formatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      activeInput.value = formatted;
+      closePopup();
+    });
+    
+    // 清除
+    document.getElementById('dpClear').addEventListener('click', () => {
+      if (!activeInput) return;
+      activeInput.value = '';
+      closePopup();
+    });
+    
+    // 日期选择
+    document.getElementById('dpDays').addEventListener('click', (e) => {
+      if (!activeInput) return;
+      
+      const dayEl = e.target.closest('[data-day]');
+      if (!dayEl) return;
+      
+      const year = parseInt(dayEl.dataset.year);
+      const month = parseInt(dayEl.dataset.month);
+      const day = parseInt(dayEl.dataset.day);
+      
+      const formatted = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      activeInput.value = formatted;
+      closePopup();
+    });
+  }
+  
+  // 渲染日期选择器
+  _renderDatePicker(date, selectedDate) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    
+    // 更新年月显示
+    document.getElementById('dpMonthYear').textContent = `${year}年${month + 1}月`;
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const daysContainer = document.getElementById('dpDays');
+    daysContainer.innerHTML = '';
+    
+    // 生成42个日期格子（6周）
+    for (let i = 0; i < 42; i++) {
+      const cellDate = new Date(startDate);
+      cellDate.setDate(startDate.getDate() + i);
+      
+      const cellYear = cellDate.getFullYear();
+      const cellMonth = cellDate.getMonth() + 1;
+      const cellDay = cellDate.getDate();
+      const formatted = `${cellYear}-${String(cellMonth).padStart(2, '0')}-${String(cellDay).padStart(2, '0')}`;
+      
+      const isCurrentMonth = cellDate.getMonth() === month;
+      const isToday = formatted === this._getTodayString();
+      const isSelected = formatted === selectedDate;
+      
+      const dayEl = document.createElement('div');
+      dayEl.dataset.day = cellDay;
+      dayEl.dataset.month = cellMonth;
+      dayEl.dataset.year = cellYear;
+      dayEl.textContent = cellDay;
+      dayEl.style.cssText = `
+        padding: 8px;
+        text-align: center;
+        cursor: pointer;
+        border-radius: 6px;
+        font-size: 13px;
+        ${isCurrentMonth ? 'color: #111827;' : 'color: #9ca3af;'}
+        ${isToday ? 'background: #dbeafe; font-weight: 600;' : ''}
+        ${isSelected ? 'background: #2563eb; color: #fff;' : ''}
+      `;
+      dayEl.addEventListener('mouseenter', () => {
+        if (!isSelected) dayEl.style.background = '#f3f4f6';
+      });
+      dayEl.addEventListener('mouseleave', () => {
+        if (!isSelected) dayEl.style.background = 'transparent';
+      });
+      
+      daysContainer.appendChild(dayEl);
+    }
+  }
+  
+  // 获取今天日期字符串
+  _getTodayString() {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
+
+  _initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      const isInputFocused = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT');
+      
+      if (e.key === 'Escape') {
+        const drawer = document.getElementById('drawer');
+        const assessorDrawer = document.getElementById('assessorDrawer');
+        const addAssessorDrawer = document.getElementById('addAssessorDrawer');
+        const datePicker = document.getElementById('datePickerPopup');
+        const availPopup = document.getElementById('availPopup');
+        
+        if (drawer.classList.contains('open')) { this.closeDrawer(); return; }
+        if (assessorDrawer.classList.contains('open')) { this.closeAssessorDrawer(); return; }
+        if (addAssessorDrawer.classList.contains('open')) { this.closeAddAssessorDrawer(); return; }
+        if (datePicker.style.display === 'block') { datePicker.style.display = 'none'; return; }
+        if (availPopup.classList.contains('show')) { this.calendar._hideAvailPopup(); return; }
+        if (isInputFocused) { document.activeElement.blur(); return; }
+      }
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        const drawer = document.getElementById('drawer');
+        if (drawer.classList.contains('open')) { this.saveDrawer(); return; }
+        const assessorDrawer = document.getElementById('assessorDrawer');
+        if (assessorDrawer.classList.contains('open')) { this.saveAssessorEdit(); return; }
+        const addAssessorDrawer = document.getElementById('addAssessorDrawer');
+        if (addAssessorDrawer.classList.contains('open')) { this.saveNewAssessor(); return; }
+      }
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        if (document.getElementById('viewCal').style.display !== 'none') {
+          e.preventDefault();
+          const timelineSearch = document.getElementById('timelineSearch');
+          if (timelineSearch) { timelineSearch.focus(); timelineSearch.select(); }
+        } else {
+          e.preventDefault();
+          const search = document.getElementById('search');
+          if (search) { search.focus(); search.select(); }
+        }
+      }
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        this.openAddAssessorDrawer();
+      }
+      
+      const isCalVisible = document.getElementById('viewCal').style.display !== 'none';
+      if (isCalVisible && !isInputFocused) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          this.calendar.prevMonth();
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          this.calendar.nextMonth();
+        }
+        if (e.key === 't' || e.key === 'T') {
+          e.preventDefault();
+          this.calendar.goToToday();
+        }
+        if (e.key === '1') {
+          e.preventDefault();
+          this.calendar.setMode('arrange');
+        }
+        if (e.key === '2') {
+          e.preventDefault();
+          this.calendar.setMode('avail');
+        }
+      }
+    });
+  }
+
+  _initColumnResize() {
+    const table = document.getElementById('mainTable');
+    if (!table) return;
+    
+    const headerCells = table.querySelectorAll('.virtual-header .virtual-cell');
+    let isResizing = false;
+    let currentCol = null;
+    let startX = 0;
+    let startWidth = 0;
+    
+    // 加载保存的列宽
+    this._loadColumnWidths();
+    
+    headerCells.forEach((cell, index) => {
+      cell.addEventListener('mousedown', (e) => {
+        const rect = cell.getBoundingClientRect();
+        if (e.clientX > rect.right - 10) {
+          isResizing = true;
+          currentCol = index;
+          startX = e.clientX;
+          startWidth = parseInt(cell.style.width) || rect.width;
+          cell.classList.add('resizing');
+          e.preventDefault();
+        }
+      });
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing || currentCol === null) return;
+      
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(50, startWidth + diff);
+      
+      // 更新表头宽度
+      headerCells[currentCol].style.width = newWidth + 'px';
+      
+      // 更新所有数据行的对应列宽度
+      const dataRows = table.querySelectorAll('.virtual-row');
+      dataRows.forEach(row => {
+        const cell = row.querySelector(`[data-col="${currentCol}"]`);
+        if (cell) cell.style.width = newWidth + 'px';
+      });
+    });
+    
+    document.addEventListener('mouseup', () => {
+      if (isResizing && currentCol !== null) {
+        headerCells[currentCol].classList.remove('resizing');
+        // 保存列宽到localStorage
+        this._saveColumnWidths();
+      }
+      isResizing = false;
+      currentCol = null;
+    });
+  }
+
+  _saveColumnWidths() {
+    const table = document.getElementById('mainTable');
+    if (!table) return;
+    const headerCells = table.querySelectorAll('.virtual-header .virtual-cell');
+    const widths = Array.from(headerCells).map(cell => parseInt(cell.style.width) || cell.offsetWidth);
+    try {
+      localStorage.setItem(Config.COLUMN_WIDTH_KEY, JSON.stringify(widths));
+    } catch (e) { console.error('Save column widths failed:', e); }
+  }
+
+  _loadColumnWidths() {
+    try {
+      const saved = localStorage.getItem(Config.COLUMN_WIDTH_KEY);
+      const widths = saved ? JSON.parse(saved) : Config.DEFAULT_COLUMN_WIDTHS;
+      const table = document.getElementById('mainTable');
+      if (!table) return;
+      
+      const headerCells = table.querySelectorAll('.virtual-header .virtual-cell');
+      headerCells.forEach((cell, index) => {
+        if (widths[index]) {
+          cell.style.width = widths[index] + 'px';
+        }
+      });
+      
+      // 更新表头最小宽度
+      const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+      const header = table.querySelector('.virtual-header');
+      if (header) header.style.minWidth = totalWidth + 'px';
+    } catch (e) { console.error('Load column widths failed:', e); }
+  }
+
+  _getColumnWidths() {
+    try {
+      const saved = localStorage.getItem(Config.COLUMN_WIDTH_KEY);
+      if (saved) {
+        const widths = JSON.parse(saved);
+        // 如果保存的列数与默认列数不一致，使用默认配置
+        if (widths.length === Config.DEFAULT_COLUMN_WIDTHS.length) {
+          return widths;
+        }
+      }
+      return Config.DEFAULT_COLUMN_WIDTHS;
+    } catch (e) {
+      return Config.DEFAULT_COLUMN_WIDTHS;
+    }
+  }
+
+  _getPendingColumnWidths() {
+    try {
+      const saved = localStorage.getItem('pending_column_widths');
+      if (saved) {
+        const widths = JSON.parse(saved);
+        if (widths.length === 6) return widths;
+      }
+    } catch (e) {}
+    return [40, 160, 60, 110, 80, 60];
+  }
+
+  _loadPendingColumnWidths() {
+    try {
+      const saved = localStorage.getItem('pending_column_widths');
+      if (!saved) return;
+      const widths = JSON.parse(saved);
+      if (widths.length !== 6) return;
+      const headerCells = document.querySelectorAll('#pendingHeader .virtual-cell');
+      headerCells.forEach((cell, index) => {
+        if (widths[index]) cell.style.width = widths[index] + 'px';
+      });
+    } catch (e) {}
+  }
+
+  _getAssessorColumnWidths() {
+    try {
+      const saved = localStorage.getItem('assessor_column_widths');
+      if (saved) {
+        const widths = JSON.parse(saved);
+        if (widths.length === 6) return widths;
+      }
+    } catch (e) {}
+    return [120, 75, 70, 90, 80, 60];
+  }
+
+  _loadAssessorColumnWidths() {
+    try {
+      const saved = localStorage.getItem('assessor_column_widths');
+      if (!saved) return;
+      const widths = JSON.parse(saved);
+      if (widths.length !== 6) return;
+      const headerCells = document.querySelectorAll('#assessorTable .virtual-header .virtual-cell');
+      headerCells.forEach((cell, index) => {
+        if (widths[index]) cell.style.width = widths[index] + 'px';
+      });
+    } catch (e) {}
+  }
+
+  _switchTab(tab) {
+    if (tab === 'list') {
+      document.getElementById('tabList').classList.add('active');
+      document.getElementById('tabCal').classList.remove('active');
+      document.getElementById('viewList').style.display = 'block';
+      document.getElementById('viewCal').style.display = 'none';
+    } else {
+      document.getElementById('tabCal').classList.add('active');
+      document.getElementById('tabList').classList.remove('active');
+      document.getElementById('viewList').style.display = 'none';
+      document.getElementById('viewCal').style.display = 'block';
+      this.calendar.render();
+    }
+  }
+
+  _statusBadge(st) {
+    st = String(st || '').trim();
+    if (st === '' || st === '空白') return '<span class="badge yellow">空白</span>';
+    if (st === 'Preparing Report') return '<span class="badge yellow">Preparing Report</span>';
+    if (st === 'Done') return '<span class="badge green">Done</span>';
+    if (st === 'Planned') return '<span class="badge blue">Planned</span>';
+    if (st === 'Pending') return '<span class="badge orange">Pending</span>';
+    if (st === 'Inactive') return '<span class="badge red">Inactive</span>';
+    return `<span class="badge">${Utils.esc(st)}</span>`;
+  }
+
+  // 计算报告时间和状态灯（只在Preparing Report时显示灯）
+  _calcReportDueInfo(reportDateStr, assessDateStr, status) {
+    // 优先使用已设置的报告时间，否则计算（Assess Date 后第10个工作日，不含评估当天）
+    let reportDate = null;
+    
+    if (reportDateStr && reportDateStr.trim()) {
+      reportDate = Utils.parseISO(reportDateStr);
+    }
+    
+    // 如果没有设置报告时间，且有Assess Date，则自动计算
+    if (!reportDate && assessDateStr && assessDateStr.trim()) {
+      const assessDate = Utils.parseISO(assessDateStr);
+      if (assessDate) {
+        // 计算评估日期后第10个工作日（不包含评估当天）
+        // 例如：评估日期是周一，则周二为第1个工作日，第10个工作日是下周五
+        let workDays = 0;
+        reportDate = new Date(assessDate);
+        while (workDays < 10) {
+          reportDate.setDate(reportDate.getDate() + 1);
+          const dayOfWeek = reportDate.getDay();
+          const dateStr = `${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}-${String(reportDate.getDate()).padStart(2, '0')}`;
+          
+          // 判断是否为工作日：
+          // 1. 调休上班日 -> 是工作日
+          // 2. 法定节假日 -> 非工作日
+          // 3. 周末（周六日）-> 非工作日
+          // 4. 其他 -> 是工作日
+          if (CHINA_WORKDAYS[dateStr]) {
+            // 调休上班日，算工作日
+            workDays++;
+          } else if (CHINA_HOLIDAYS[dateStr]) {
+            // 法定节假日，跳过
+            continue;
+          } else if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            // 普通工作日
+            workDays++;
+          }
+        }
+      }
+    }
+    
+    if (!reportDate) {
+      return { date: '-', light: '' };
+    }
+    
+    const formattedDate = `${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}-${String(reportDate.getDate()).padStart(2, '0')}`;
+    
+    // 只在Preparing Report状态时显示状态灯
+    if (status !== 'Preparing Report') {
+      return { date: formattedDate, light: '' };
+    }
+    
+    // 计算距离今天的天数
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = reportDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // 状态灯：3天黄/1天棕/超期红
+    let light = '';
+    if (diffDays < 0) {
+      light = ' <span class="report-light overdue" title="已超期"></span>';
+    } else if (diffDays <= 1) {
+      light = ' <span class="report-light critical" title="剩1天"></span>';
+    } else if (diffDays <= 3) {
+      light = ' <span class="report-light warning" title="剩3天内"></span>';
+    } else {
+      light = ' <span class="report-light ok" title="时间充裕"></span>';
+    }
+    
+    return { date: formattedDate, light };
+  }
+
+  _highlightSearch(text) {
+    text = String(text || '');
+    const q = this.state.q.trim();
+    if (!q) return Utils.esc(text);
+    const escaped = Utils.esc(text);
+    const escapedQ = Utils.esc(q);
+    const regex = new RegExp(`(${escapedQ.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return escaped.replace(regex, '<span class="search-highlight">$1</span>');
+  }
+
+  _updateSortArrows() {
+    document.querySelectorAll('#mainTable .virtual-cell.sortable .sort-arrow').forEach(arrow => {
+      arrow.textContent = '';
+    });
+    if (this.state.sortField) {
+      const cell = document.querySelector(`#mainTable .virtual-cell.sortable[data-sort="${this.state.sortField}"] .sort-arrow`);
+      if (cell) cell.textContent = this.state.sortDir === 'asc' ? '▲' : '▼';
+    }
+  }
+
+  _sortData(rows) {
+    if (!this.state.sortField) return rows;
+    const field = this.state.sortField;
+    const dir = this.state.sortDir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      let va = String(this.dataManager.get(a, field) || '').trim();
+      let vb = String(this.dataManager.get(b, field) || '').trim();
+      if (field === 'score') {
+        const na = parseFloat(va), nb = parseFloat(vb);
+        if (!isNaN(na) && !isNaN(nb)) return (na - nb) * dir;
+      }
+      return va.localeCompare(vb, 'zh-CN') * dir;
+    });
+  }
+
+  _filteredRows() {
+    const q = this.state.q.toLowerCase();
+    const allRows = this.dataManager.getAll();
+    return allRows.filter((r, idx) => {
+      if (this.state._availIndices && this.state._availIndices.size > 0 && !this.state._availIndices.has(idx)) return false;
+      if (this.state.office && this.dataManager.get(r, 'office') !== this.state.office) return false;
+      if (this.state.assessor && this.dataManager.get(r, 'assessor') !== this.state.assessor) return false;
+      if (this.state.status && this.dataManager.get(r, 'status') !== this.state.status) return false;
+      if (this.state.availDate) {
+        const date = Utils.parseISO(this.state.availDate);
+        if (!date || !this._isRowAvailableOnDate(r, date)) return false;
+      }
+      if (q) {
+        const hay = [this.dataManager.get(r, 'supplier'), this.dataManager.get(r, 'factory'), this.dataManager.get(r, 'fid'), this.dataManager.get(r, 'assessor')].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  // 判断某行数据在指定日期是否可用（用于列表筛选）
+  _isRowAvailableOnDate(row, date) {
+    const availStr = this.dataManager.get(row, 'avail');
+    const range = Utils.parseAvailRange(availStr);
+    if (!range.from || !range.to) return false;
+    const from = Utils.parseISO(range.from);
+    const to = Utils.parseISO(range.to);
+    if (!from || !to) return false;
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    target.setHours(0, 0, 0, 0);
+    from.setHours(0, 0, 0, 0);
+    to.setHours(0, 0, 0, 0);
+    return target >= from && target <= to;
+  }
+
+  _renderFilterChips() {
+    const container = document.getElementById('filterChips');
+    if (!container) return;
+    let html = '';
+    if (this.state.office) html += `<span class="filter-chip">Office: ${Utils.esc(this.state.office)} <span class="chip-close" onclick="window.app._clearFilter('office')">×</span></span>`;
+    if (this.state.assessor) html += `<span class="filter-chip">Assessor: ${Utils.esc(this.state.assessor)} <span class="chip-close" onclick="window.app._clearFilter('assessor')">×</span></span>`;
+    if (this.state.status) html += `<span class="filter-chip">Status: ${Utils.esc(this.state.status)} <span class="chip-close" onclick="window.app._clearFilter('status')">×</span></span>`;
+    if (this.state.q) html += `<span class="filter-chip">搜索: "${Utils.esc(this.state.q)}" <span class="chip-close" onclick="window.app._clearFilter('search')">×</span></span>`;
+    container.innerHTML = html;
+  }
+
+  _clearFilter(type) {
+    if (type === 'office') { this.state.office = ''; document.getElementById('filterOffice').value = ''; }
+    if (type === 'assessor') { this.state.assessor = ''; document.getElementById('filterAssessor').value = ''; }
+    if (type === 'status') { this.state.status = ''; document.getElementById('filterStatus').value = ''; }
+    if (type === 'search') { this.state.q = ''; document.getElementById('search').value = ''; }
+    this.renderAll();
+  }
+
+  renderAll() {
+    this._renderFilterChips();
+    this._renderAssessorTable();
+    this._renderPendingTable();
+    this._renderRiskBox();
+    this._renderListAvailSummary();
+    this._renderMainTable();
+    if (document.getElementById('viewCal').style.display !== 'none') this.calendar.render();
+  }
+
+  _renderListAvailSummary() {
+    const summaryEl = document.getElementById('listAvailSummary');
+    if (!summaryEl) return;
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
+    const rows = this.dataManager.getAll();
+    
+    // 统计总工厂数（所有记录）
+    const totalFactories = rows.length;
+    
+    // 统计已完成工厂数（所有状态为 Done 的记录）
+    const totalDone = rows.filter(row => {
+      const st = String(this.dataManager.get(row, 'status') || '').trim();
+      return st === 'Done';
+    }).length;
+    
+    const uniqueFactories = new Map();
+
+    rows.forEach((row, idx) => {
+      const availStr = this.dataManager.get(row, 'avail');
+      const range = Utils.parseAvailRange(availStr);
+      if (!range.from || !range.to) return;
+
+      const from = Utils.parseISO(range.from);
+      const to = Utils.parseISO(range.to);
+      if (!from || !to) return;
+
+      if (to < monthStart || from > monthEnd) return;
+
+      const assessor = String(this.dataManager.get(row, 'assessor') || '').trim();
+      const status = String(this.dataManager.get(row, 'status') || '').trim();
+
+      uniqueFactories.set(idx, {
+        index: idx,
+        factory: this.dataManager.get(row, 'factory'),
+        assessor: assessor,
+        status: status
+      });
+    });
+
+    const allFactories = [...uniqueFactories.values()];
+
+    const todo = allFactories.filter(f => {
+      const st = (f.status || '').trim();
+      return st === '' || st === '空白';
+    });
+    const assigned = allFactories.filter(f => {
+      const st = (f.status || '').trim();
+      return st === 'Planned' || st === 'Preparing Report';
+    });
+    const done = allFactories.filter(f => {
+      const st = (f.status || '').trim();
+      return st === 'Done';
+    });
+
+    summaryEl.style.display = 'flex';
+    summaryEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:15px;font-weight:700;color:#1e40af;">
+          📊 总工厂: <b>${totalFactories}</b> | 已完成: <b>${totalDone}</b>
+        </div>
+        <div style="font-size:13px;color:#4b5563;border-top:1px dashed #d1d5db;padding-top:6px;">
+          <span style="font-weight:600;">${month + 1}月可用: ${allFactories.length}</span>
+          <span style="margin-left:12px;"><span class="summary-dot" style="background:#f59e0b;"></span>待分配: ${todo.length}</span>
+          <span style="margin-left:8px;"><span class="summary-dot" style="background:#3b82f6;"></span>已分配: ${assigned.length}</span>
+          <span style="margin-left:8px;"><span class="summary-dot" style="background:#22c55e;"></span>已完成: ${done.length}</span>
+        </div>
+      </div>
+    `;
+
+    summaryEl.querySelectorAll('.summary-item.clickable').forEach(item => {
+      item.addEventListener('click', () => {
+        const filter = item.dataset.filter;
+        this._filterListByAvailSummary(filter, todo, assigned, done);
+      });
+    });
+  }
+
+  _filterListByAvailSummary(filter, todo, assigned, done) {
+    this.state.q = '';
+    document.getElementById('search').value = '';
+
+    if (filter === 'todo') {
+      this.state._availIndices = new Set(todo.map(f => f.index));
+    } else if (filter === 'assigned') {
+      this.state._availIndices = new Set(assigned.map(f => f.index));
+    } else if (filter === 'done') {
+      this.state._availIndices = new Set(done.map(f => f.index));
+    }
+
+    this.renderAll();
+    const monthLabel = new Date().getMonth() + 1;
+    const labels = { todo: '待分配', assigned: '已分配', done: '已完成' };
+    this.showError(`✅ 已筛选${monthLabel}月${labels[filter] || filter}工厂`);
+  }
+
+  _renderAssessorTable() {
+    // 使用所有数据计算工作量，而不是筛选后的数据，确保显示所有 assessor
+    const wl = this.workloadCalc.calculate(this.dataManager.getAll());
+    this.virtualScrollers.assessor.setData(wl);
+  }
+
+  _renderPendingTable() {
+    const q = this.state.q.toLowerCase();
+    const baseForStats = this.dataManager.getAll().filter(r => {
+      if (this.state.office && this.dataManager.get(r, 'office') !== this.state.office) return false;
+      if (q) {
+        const hay = [this.dataManager.get(r, 'supplier'), this.dataManager.get(r, 'factory'), this.dataManager.get(r, 'fid'), this.dataManager.get(r, 'assessor')].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      // 只统计有有效 Available Date 的工厂
+      const availStr = this.dataManager.get(r, 'avail');
+      const range = Utils.parseAvailRange(availStr);
+      if (!range.from || !range.to) return false;
+      return true;
+    });
+    
+    const total = baseForStats.length;
+    const plannedCnt = baseForStats.filter(r => String(this.dataManager.get(r, 'status') || '').trim() === 'Planned').length;
+    const blankCnt = baseForStats.filter(r => { const st = String(this.dataManager.get(r, 'status') || '').trim(); return st === '' || st === '空白'; }).length;
+    document.getElementById('pendingStats').innerHTML = `可排总工厂数：<b>${total}</b> ｜ Planned：<b>${plannedCnt}</b> ｜ 空白：<b>${blankCnt}</b>`;
+
+    const pr = this._pendingRows();
+    this.virtualScrollers.pending.setData(pr);
+  }
+
+  _pendingRows() {
+    const rows = this._filteredRows().filter(r => {
+      const st = String(this.dataManager.get(r, 'status') || '').trim();
+      const as = String(this.dataManager.get(r, 'assessor') || '').trim();
+      const isPendingStatus = (st === '' || st === '空白' || st === 'Planned');
+      const hasNoAssessor = (as === '' || as.toLowerCase() === 'tbd');
+      const availStr = this.dataManager.get(r, 'avail');
+      const range = Utils.parseAvailRange(availStr);
+      const hasAvail = range.from && range.to;
+      return isPendingStatus && hasNoAssessor && hasAvail;
+    });
+    rows.sort((a, b) => {
+      const rangeA = Utils.parseAvailRange(this.dataManager.get(a, 'avail'));
+      const rangeB = Utils.parseAvailRange(this.dataManager.get(b, 'avail'));
+      const fromA = Utils.parseISO(rangeA.from);
+      const fromB = Utils.parseISO(rangeB.from);
+      if (!fromA && !fromB) return 0;
+      if (!fromA) return 1;
+      if (!fromB) return -1;
+      return fromA - fromB;
+    });
+    return rows;
+  }
+
+  _renderRiskBox() {
+    const wl = this.workloadCalc.calculate(this.dataManager.getAll());
+    const over = wl.filter(x => x.load === 'red');
+    const nextOver = wl.filter(x => x.nextLoad === 'red');
+
+    const conflicts = this._detectDateConflicts();
+    const overdue = this._detectOverdueTasks();
+    const unassigned = this._detectUnassignedTasks();
+    const availConflicts = this._detectAvailWindowConflicts();
+    const missingScore = this._detectMissingScore();
+
+    let html = '';
+    const hasAnyIssue = over.length || nextOver.length || conflicts.length || overdue.length || unassigned.length || availConflicts.length || missingScore.length;
+    if (!hasAnyIssue) html = `<span class="badge green">无风险或冲突</span>`;
+    else {
+      if (over.length) html += `<div style="margin-bottom:8px;"><span class="badge red">超负荷</span> ` + over.map(x => `${Utils.esc(x.assessor)}(Planned:${x.plannedThis})`).join('，') + `</div>`;
+      if (nextOver.length) html += `<div style="margin-bottom:8px;"><span class="badge red">下周超负荷</span> ` + nextOver.map(x => `${Utils.esc(x.assessor)}(下周Planned:${x.plannedNext})`).join('，') + `</div>`;
+      if (conflicts.length) {
+        html += `<div style="margin-bottom:8px;"><span class="badge red">日期冲突</span> ` + conflicts.map(c => `${Utils.esc(c.assessor)} @ ${c.date} (${c.count}条)`).join('，') + `</div>`;
+      }
+      if (overdue.length) {
+        html += `<div style="margin-bottom:8px;"><span class="badge red">过期任务</span> ` + overdue.map(o => `${Utils.esc(o.factory)}(${o.date})`).join('，') + `</div>`;
+      }
+      if (unassigned.length) {
+        html += `<div style="margin-bottom:8px;"><span class="badge yellow">未分配</span> ${unassigned.length}条Planned任务无Assessor</div>`;
+      }
+      if (availConflicts.length) {
+        html += `<div style="margin-bottom:8px;"><span class="badge red">窗口冲突</span> ` + availConflicts.map(c => `${Utils.esc(c.factory)}`).join('，') + `</div>`;
+      }
+      if (missingScore.length) {
+        html += `<div><span class="badge yellow">缺分数</span> ` + missingScore.map(m => `${Utils.esc(m.factory)}(QC:${Utils.esc(m.assessor)})`).join('，') + `</div>`;
+      }
+    }
+    document.getElementById('riskBox').innerHTML = html;
+    const riskCard = document.getElementById('riskCard');
+    if (riskCard) {
+      riskCard.classList.remove('has-risk', 'no-risk');
+      riskCard.classList.add(hasAnyIssue ? 'has-risk' : 'no-risk');
+    }
+  }
+
+  // 检测同一天同一人有多条记录
+  _detectDateConflicts() {
+    const all = this.dataManager.getAll();
+    const conflicts = [];
+    
+    // 按 assessor 和日期分组
+    const groups = {};
+    all.forEach(row => {
+      const assessor = String(this.dataManager.get(row, 'assessor') || '').trim();
+      const dateStr = String(this.dataManager.get(row, 'assessDate') || '').trim();
+      if (!assessor || !dateStr || assessor.toLowerCase() === 'tbd') return;
+      
+      const d = Utils.parseISO(dateStr);
+      if (!d) return;
+      
+      const key = `${assessor}@${d.getTime()}`;
+      if (!groups[key]) {
+        groups[key] = { assessor, date: dateStr, dateObj: d, rows: [] };
+      }
+      groups[key].rows.push(row);
+    });
+    
+    // 找出有冲突的组
+    Object.values(groups).forEach(group => {
+      if (group.rows.length > 1) {
+        conflicts.push({
+          assessor: group.assessor,
+          date: group.date,
+          count: group.rows.length
+        });
+      }
+    });
+    
+    return conflicts;
+  }
+
+  // 检测过期任务（Planned状态但日期已过去）
+  _detectOverdueTasks() {
+    const all = this.dataManager.getAll();
+    const overdue = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    all.forEach(row => {
+      const status = String(this.dataManager.get(row, 'status') || '').trim();
+      const dateStr = String(this.dataManager.get(row, 'assessDate') || '').trim();
+      if (status !== 'Planned' || !dateStr) return;
+      
+      const d = Utils.parseISO(dateStr);
+      if (!d) return;
+      
+      if (d < today) {
+        overdue.push({
+          factory: this.dataManager.get(row, 'factory'),
+          date: dateStr
+        });
+      }
+    });
+    
+    return overdue;
+  }
+
+  // 检测未分配任务（Planned状态但无Assessor或TBD）
+  _detectUnassignedTasks() {
+    const all = this.dataManager.getAll();
+    return all.filter(row => {
+      const status = String(this.dataManager.get(row, 'status') || '').trim();
+      const assessor = String(this.dataManager.get(row, 'assessor') || '').trim();
+      return status === 'Planned' && (!assessor || assessor.toLowerCase() === 'tbd');
+    });
+  }
+
+  // 检测工厂可用窗口冲突（Assess Date不在Available范围内）
+  _detectAvailWindowConflicts() {
+    const all = this.dataManager.getAll();
+    const conflicts = [];
+    
+    all.forEach(row => {
+      const assessDateStr = String(this.dataManager.get(row, 'assessDate') || '').trim();
+      const availStr = String(this.dataManager.get(row, 'avail') || '').trim();
+      if (!assessDateStr || !availStr) return;
+      
+      const assessDate = Utils.parseISO(assessDateStr);
+      if (!assessDate) return;
+      
+      // 解析 Available 范围（格式：YYYY-MM-DD ~ YYYY-MM-DD）
+      const availMatch = availStr.match(/(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})/);
+      if (!availMatch) return;
+      
+      const fromDate = Utils.parseISO(availMatch[1]);
+      const toDate = Utils.parseISO(availMatch[2]);
+      if (!fromDate || !toDate) return;
+      
+      // 检查 Assess Date 是否在范围内
+      if (assessDate < fromDate || assessDate > toDate) {
+        conflicts.push({
+          factory: this.dataManager.get(row, 'factory'),
+          assessDate: assessDateStr,
+          availRange: availStr
+        });
+      }
+    });
+    
+    return conflicts;
+  }
+
+  _detectMissingScore() {
+    const all = this.dataManager.getAll();
+    const missing = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    all.forEach(row => {
+      const status = String(this.dataManager.get(row, 'status') || '').trim();
+      if (status !== 'Preparing Report') return;
+
+      const reportDateStr = String(this.dataManager.get(row, 'reportDate') || '').trim();
+      if (!reportDateStr) return;
+
+      const reportDate = Utils.parseISO(reportDateStr);
+      if (!reportDate) return;
+
+      if (reportDate > today) return;
+
+      const score = String(this.dataManager.get(row, 'score') || '').trim();
+      if (score) return;
+
+      missing.push({
+        factory: this.dataManager.get(row, 'factory'),
+        assessor: this.dataManager.get(row, 'assessor') || '-'
+      });
+    });
+
+    return missing;
+  }
+
+  _renderMainTable() {
+    const base = this._filteredRows();
+    const sorted = this._sortData(base);
+    this.virtualScrollers.main.setData(sorted);
+  }
+
+  // Drawer 方法
+  openDrawer(idx) {
+    this.state.selectedRowIndex = idx;
+    const isNew = (idx === null || idx === undefined || idx < 0);
+    const r = isNew ? null : this.dataManager.getAll()[idx];
+    
+    if (isNew) {
+      document.getElementById('dTitle').textContent = '新工厂';
+      document.getElementById('dSub').textContent = '手动添加新记录';
+      document.getElementById('fSupplier').value = '';
+      document.getElementById('fFactory').value = '';
+      document.getElementById('fFid').value = '';
+      document.getElementById('fAvailFrom').value = '';
+      document.getElementById('fAvailTo').value = '';
+      document.getElementById('fAssessor').value = '';
+      document.getElementById('fDate').value = '';
+      document.getElementById('fStatus').value = '空白';
+      document.getElementById('fReportDate').value = '';
+      document.getElementById('fScore').value = '';
+      document.getElementById('fRemarks').value = '';
+    } else {
+      if (!r) return;
+      document.getElementById('dTitle').textContent = this.dataManager.get(r, 'factory') || 'Factory';
+      document.getElementById('dSub').textContent = `FID: ${this.dataManager.get(r, 'fid') || ''}`;
+      document.getElementById('fSupplier').value = String(this.dataManager.get(r, 'supplier') || '').trim();
+      document.getElementById('fFactory').value = String(this.dataManager.get(r, 'factory') || '').trim();
+      document.getElementById('fFid').value = String(this.dataManager.get(r, 'fid') || '').trim();
+      const a0 = Utils.parseAvailRange(this.dataManager.get(r, 'avail'));
+      document.getElementById('fAvailFrom').value = a0.from;
+      document.getElementById('fAvailTo').value = a0.to;
+      document.getElementById('fAssessor').value = String(this.dataManager.get(r, 'assessor') || '').trim();
+      document.getElementById('fDate').value = String(this.dataManager.get(r, 'assessDate') || '').trim();
+      document.getElementById('fStatus').value = (String(this.dataManager.get(r, 'status') || '').trim() || '空白');
+      document.getElementById('fReportDate').value = String(this.dataManager.get(r, 'reportDate') || '').trim();
+      document.getElementById('fScore').value = String(this.dataManager.get(r, 'score') || '').trim();
+      document.getElementById('fRemarks').value = String(this.dataManager.get(r, 'remarks') || '').trim();
+    }
+
+    const allAssessors = this.dataManager.getAllAssessors().filter(a => a && a.toLowerCase() !== 'tbd');
+    const wl = this.workloadCalc.calculate(this.dataManager.getAll());
+    const sel = document.getElementById('fAssessor');
+    const currentVal = isNew ? '' : String(this.dataManager.get(r, 'assessor') || '').trim();
+    sel.innerHTML = `<option value="">（未分配）</option>` + allAssessors.map(a => {
+      const info = wl.find(x => x.assessor === a) || { load: 'green', plannedThis: 0 };
+      const icon = info.load === 'green' ? '🟢' : (info.load === 'yellow' ? '🟡' : '🔴');
+      return `<option value="${Utils.esc(a)}">${Utils.esc(a)} ${icon} 本周Planned:${info.plannedThis}</option>`;
+    }).join('');
+    if (!isNew) sel.value = currentVal;
+
+    this._updateDrawerRisk();
+    document.getElementById('drawer').classList.add('open');
+  }
+
+  closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
+
+  _updateDrawerRisk() {
+    const idx = this.state.selectedRowIndex;
+    const isNew = (idx === null || idx === undefined || idx < 0);
+    if (isNew) {
+      document.getElementById('dRisk').innerHTML = '<span class="badge green">新建记录，保存后生效</span>';
+      return;
+    }
+    const r = this.dataManager.getAll()[idx];
+    if (!r) return;
+    
+    const office = String(this.dataManager.get(r, 'office') || '').trim();
+    const base = this.dataManager.getAll().filter(x => String(this.dataManager.get(x, 'office') || '').trim() === office);
+    const wl = this.workloadCalc.calculate(base);
+
+    const a = String(document.getElementById('fAssessor').value || '').trim();
+    const dStr = String(document.getElementById('fDate').value || '').trim();
+    const d = Utils.parseISO(dStr);
+    const st = String(document.getElementById('fStatus').value || '').trim();
+
+    let msgs = [];
+    if (a) {
+      const info = wl.find(x => x.assessor === a) || { load: 'green', plannedThis: 0, nextLoad: 'green', plannedNext: 0 };
+      if (info.load === 'red') msgs.push('⚠️ 该 Assessor 本周已超负荷（≥2 Planned）');
+      else if (info.load === 'yellow') msgs.push('⚡ 该 Assessor 本周接近上限（1 Planned）');
+      if (info.nextLoad === 'red') msgs.push('⚠️ 该 Assessor 下周已超负荷（≥2 Planned）');
+    }
+    if (st === 'Planned' && d) {
+      const sameDate = base.filter(x => {
+        const xd = Utils.parseISO(this.dataManager.get(x, 'assessDate'));
+        return xd && xd.getTime() === d.getTime() && String(this.dataManager.get(x, 'assessor') || '').trim() === a && this.dataManager.getAll().indexOf(x) !== idx;
+      });
+      if (sameDate.length) msgs.push(`⚠️ 同一天已有 ${sameDate.length} 条记录`);
+    }
+    if (st === 'Planned' && !d) msgs.push('ℹ️ Planned 状态建议填写 Assess Date');
+    if (st === 'Done' && !document.getElementById('fScore').value) msgs.push('ℹ️ Done 状态建议填写 Score');
+
+    document.getElementById('dRisk').innerHTML = msgs.length ? msgs.map(m => `<div>${m}</div>`).join('') : '<span class="badge green">暂无冲突</span>';
+  }
+
+  async saveDrawer() {
+    const idx = this.state.selectedRowIndex;
+    const isNew = (idx === null || idx === undefined || idx < 0);
+
+    const a0 = Utils.formatAvailRange(document.getElementById('fAvailFrom').value, document.getElementById('fAvailTo').value);
+    const updates = {
+      supplier: document.getElementById('fSupplier').value,
+      factory: document.getElementById('fFactory').value,
+      fid: document.getElementById('fFid').value,
+      avail: a0,
+      assessor: document.getElementById('fAssessor').value,
+      assessDate: document.getElementById('fDate').value,
+      status: document.getElementById('fStatus').value,
+      reportDate: document.getElementById('fReportDate').value,
+      score: document.getElementById('fScore').value,
+      remarks: document.getElementById('fRemarks').value
+    };
+
+    if (isNew) {
+      const newRow = {};
+      Object.entries(updates).forEach(([k, v]) => this.dataManager.set(newRow, k, v));
+      this.dataManager.getAll().push(newRow);
+      // 添加新记录后按 Supplier 排序
+      this.dataManager.sortBySupplier();
+      await this.dataManager._syncToSupabase();
+    } else {
+      const r = this.dataManager.getAll()[idx];
+      if (!r) return;
+      await this.dataManager.updateRow(idx, updates);
+    }
+
+    this.closeDrawer();
+    this.renderAll();
+    const syncEl = document.getElementById('syncStatus');
+    const isSynced = syncEl && syncEl.textContent.includes('☁️');
+    this.showError(isSynced ? '✅ 保存成功（已同步到云端）' : '💾 数据已保存到本地');
+  }
+
+  async clearAssignment() {
+    const idx = this.state.selectedRowIndex;
+    if (idx < 0) return;
+    await this.dataManager.updateRow(idx, { assessor: '', assessDate: '', status: '空白' });
+    this.closeDrawer();
+    this.renderAll();
+  }
+
+  openNewFactoryDrawer() {
+    this.openDrawer(-1);
+  }
+
+  duplicateRow(idx) {
+    const r = this.dataManager.getAll()[idx];
+    if (!r) return;
+    const newRow = {};
+    const fields = ['supplier', 'factory', 'fid', 'avail', 'office', 'assessor', 'assessDate', 'status', 'reportDate', 'score', 'remarks'];
+    fields.forEach(f => this.dataManager.set(newRow, f, this.dataManager.get(r, f)));
+    this.dataManager.set(newRow, 'status', '空白');
+    this.dataManager.set(newRow, 'assessor', '');
+    this.dataManager.set(newRow, 'assessDate', '');
+    this.dataManager.getAll().push(newRow);
+    this.dataManager._saveToLocalStorage();
+    this.dataManager._syncToSupabase().then(() => {
+      this.dataManager.notify();
+      this.renderAll();
+      this.showError('✅ 已复制工厂记录（状态重置为空白）');
+    });
+  }
+
+  // Assessor 抽屉方法
+  openAssessorDrawer(name) {
+    this.state.editingAssessor = name;
+    document.getElementById('assessorDrawerTitle').textContent = 'Edit Assessor';
+    document.getElementById('assessorCurrentName').textContent = name;
+    document.getElementById('fAssessorNewName').value = name;
+    document.getElementById('assessorDrawer').classList.add('open');
+  }
+
+  closeAssessorDrawer() { document.getElementById('assessorDrawer').classList.remove('open'); }
+
+  async saveAssessorEdit() {
+    const newName = document.getElementById('fAssessorNewName').value.trim();
+    if (!newName) { this.showError('请输入新的 Assessor 名称'); return; }
+    if (newName === this.state.editingAssessor) { this.closeAssessorDrawer(); return; }
+    
+    // 如果当前过滤器选中的就是这个 assessor，更新为新的名称
+    if (this.state.assessor === this.state.editingAssessor) {
+      this.state.assessor = newName;
+    }
+    
+    const count = await this.dataManager.updateRowsByAssessor(this.state.editingAssessor, newName);
+    
+    // 如果编辑的是自定义 Assessor，更新自定义列表
+    this.dataManager.removeCustomAssessor(this.state.editingAssessor);
+    this.dataManager.addCustomAssessor(newName);
+    
+    // 重新初始化过滤器以更新 Assessor 下拉列表
+    this._initFilters();
+    this.renderAll();
+    
+    this.closeAssessorDrawer();
+    this.showError(`✅ 已更新 ${count} 条记录`);
+  }
+
+  async deleteAssessor() {
+    if (!confirm(`确定要删除 Assessor "${this.state.editingAssessor}" 吗？`)) return;
+    const count = await this.dataManager.deleteRowsByAssessor(this.state.editingAssessor);
+    // 同时从自定义 Assessor 列表中移除
+    this.dataManager.removeCustomAssessor(this.state.editingAssessor);
+    // 如果当前过滤器选中的就是这个 assessor，清空过滤器
+    if (this.state.assessor === this.state.editingAssessor) {
+      this.state.assessor = '';
+    }
+    this._initFilters();
+    this.renderAll();
+    this.closeAssessorDrawer();
+    this.showError(`✅ 已删除 ${count} 条记录并移除 Assessor "${this.state.editingAssessor}"`);
+  }
+
+  // 下拉菜单切换
+  toggleDropdown(btn) {
+    const menu = btn.nextElementSibling;
+    const isOpen = menu.classList.contains('show');
+    // 关闭所有下拉菜单
+    document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+    // 切换当前菜单
+    if (!isOpen) {
+      menu.classList.add('show');
+    }
+  }
+
+  // 添加新 Assessor 方法
+  openAddAssessorDrawer() {
+    document.getElementById('fNewAssessorName').value = '';
+    document.getElementById('addAssessorDrawer').classList.add('open');
+  }
+
+  closeAddAssessorDrawer() {
+    document.getElementById('addAssessorDrawer').classList.remove('open');
+  }
+
+  async deleteRow(index) {
+    if (!confirm('确定要删除这条记录吗？')) return;
+    await this.dataManager.deleteRow(index);
+    this.renderAll();
+    this.showError('✅ 记录已删除');
+  }
+
+  saveNewAssessor() {
+    const newName = document.getElementById('fNewAssessorName').value.trim();
+    if (!newName) {
+      this.showError('请输入 Assessor 名称');
+      return;
+    }
+
+    // 检查是否已存在同名 Assessor（包括自定义的）
+    const existingAssessors = this.dataManager.getAllAssessors();
+    if (existingAssessors.includes(newName)) {
+      this.showError(`Assessor "${newName}" 已存在`);
+      return;
+    }
+
+    // 添加到自定义 Assessor 列表并持久化
+    this.dataManager.addCustomAssessor(newName);
+
+    // 重新初始化过滤器以显示新的 Assessor 选项
+    this._initFilters();
+
+    // 设置过滤器为新添加的 Assessor
+    this.state.assessor = newName;
+    document.getElementById('filterAssessor').value = newName;
+
+    this.closeAddAssessorDrawer();
+    this.renderAll();
+    this.showError(`✅ 已添加新 Assessor "${newName}"，现在可以为其分配 Factory 任务`);
+  }
+
+  // 导入导出
+  exportAllJSON() {
+    const json = this.dataManager.exportJSON();
+    this._downloadFile(`assessor_schedule_backup_${new Date().toISOString().slice(0, 10)}.json`, json, 'application/json');
+    this.showError('✅ 导出成功！');
+  }
+
+  // 导出 Assessment 列表（当前筛选结果）为 Excel
+  exportAssessmentList() {
+    const rows = this._filteredRows();
+    if (rows.length === 0) {
+      this.showError('当前没有可导出的记录');
+      return;
+    }
+
+    // 构建数据
+    const headers = ['编号', 'Vendor', 'Factory', 'FID', 'Available', 'Assess Date', 'Status', 'Assessor', '报告时间(10工作日)', 'Score', '备注'];
+    const data = [];
+    
+    rows.forEach((row, idx) => {
+      const reportDate = this.dataManager.get(row, 'reportDate');
+      const assessDate = this.dataManager.get(row, 'assessDate');
+      const reportInfo = this._calcReportDueInfo(reportDate, assessDate, this.dataManager.get(row, 'status'));
+
+      data.push({
+        '编号': idx + 1,
+        'Vendor': this.dataManager.get(row, 'supplier') || '',
+        'Factory': this.dataManager.get(row, 'factory') || '',
+        'FID': this.dataManager.get(row, 'fid') || '',
+        'Available': this.dataManager.get(row, 'avail') || '',
+        'Assess Date': this.dataManager.get(row, 'assessDate') || '',
+        'Status': this.dataManager.get(row, 'status') || '',
+        'Assessor': this.dataManager.get(row, 'assessor') || '',
+        '报告时间(7工作日)': reportInfo.date || '',
+        'Score': this.dataManager.get(row, 'score') || '',
+        '备注': this.dataManager.get(row, 'remarks') || ''
+      });
+    });
+
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data, { header: headers });
+
+    // 设置列宽
+    const colWidths = [
+      { wch: 6 },   // 编号
+      { wch: 35 },  // Vendor
+      { wch: 40 },  // Factory
+      { wch: 10 },  // FID
+      { wch: 20 },  // Available
+      { wch: 12 },  // Assess Date
+      { wch: 12 },  // Status
+      { wch: 20 },  // Assessor
+      { wch: 18 },  // 报告时间(7工作日)
+      { wch: 8 },   // Score
+      { wch: 25 }   // 备注
+    ];
+    ws['!cols'] = colWidths;
+
+    // 设置表头样式（冻结首行）
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, 'Assessment列表');
+
+    // 导出文件
+    const fileName = `assessment_list_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    this.showError(`✅ 导出成功！共 ${rows.length} 条记录`);
+  }
+
+  // 下载导入模板
+  downloadImportTemplate() {
+    const headers = ['Supplier', 'Factory', 'FID', 'Vendor Type', 'Priority', 'Factory Office', 'Factory Available Week', 'Trainer Available Date', 'Trainer Name', 'Assess Date', 'Assess Status', 'Assessor Name', 'Score', 'Training Role'];
+    const sample = {
+      'Supplier': '示例供应商有限公司',
+      'Factory': '示例工厂有限公司',
+      'FID': '12345',
+      'Vendor Type': 'Strategic Partner',
+      'Priority': 1,
+      'Factory Office': 'SH',
+      'Factory Available Week': '2025-05-01 ~ 2025-05-05',
+      'Trainer Available Date': '2025-05-03',
+      'Trainer Name': '张三',
+      'Assess Date': '2025-05-03',
+      'Assess Status': 'Planned',
+      'Assessor Name': '李四',
+      'Score': 85,
+      'Training Role': 'Observer'
+    };
+
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet([sample], { header: headers });
+
+    // 设置列宽
+    const colWidths = headers.map(() => ({ wch: 20 }));
+    ws['!cols'] = colWidths;
+
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, '导入模板');
+
+    // 导出文件
+    XLSX.writeFile(wb, 'import_template.xlsx');
+    this.showError('✅ 模板下载成功！请按示例格式填写数据后导入');
+  }
+
+  // 选择备份文件夹
+  async selectBackupFolder() {
+    try {
+      const result = await this.backupManager.selectBackupFolder();
+      if (result) {
+        this.showError('✅ 已设置自动备份文件夹，每5分钟自动备份');
+        this._updateBackupStatus();
+      } else {
+        this.showError('已取消选择备份文件夹');
+      }
+    } catch (e) {
+      // 降级方案：使用下载备份
+      this.showError('浏览器不支持文件夹选择，使用下载备份方式');
+      const fileName = this.backupManager.downloadBackup();
+      this.showError(`✅ 已下载备份: ${fileName}`);
+    }
+  }
+
+  // 更新备份状态显示
+  _updateBackupStatus() {
+    const statusEl = document.getElementById('backupStatus');
+    if (!statusEl) return;
+    
+    const status = this.backupManager.getStatus();
+    if (!status.supported) {
+      statusEl.textContent = '（浏览器不支持自动备份）';
+      statusEl.style.color = '#9ca3af';
+    } else if (status.hasFolder) {
+      statusEl.textContent = `✅ 自动备份已启用 (${status.savedFolderName || '已选文件夹'})`;
+      statusEl.style.color = '#16a34a';
+    } else if (status.savedFolderName) {
+      statusEl.textContent = `📁 上次备份文件夹: ${status.savedFolderName} (请重新选择以启用)`;
+      statusEl.style.color = '#f59e0b';
+    } else {
+      statusEl.textContent = '（未设置备份文件夹）';
+      statusEl.style.color = '#9ca3af';
+    }
+  }
+
+  importAllJSON(file) {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const obj = JSON.parse(String(reader.result || '{}'));
+        const incoming = Array.isArray(obj.rows) ? obj.rows : (Array.isArray(obj) ? obj : []);
+        await this.dataManager.loadData(incoming);
+        this._initFilters();
+        this.showError(`✅ 导入成功！共 ${incoming.length} 条记录`);
+      } catch (e) { this.showError('JSON 导入失败：' + e); }
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  importOneCSV(file) {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const raw = CSVParser.parse(String(reader.result || ''));
+        if (!raw.length) { this.showError('CSV 为空或无法解析'); return; }
+        const header = raw[0];
+        const idx = CSVParser.headerIndexMap(header);
+
+        const hasFID = idx.has('fid');
+        const hasSupplier = idx.has('supplier') || idx.has('supplier name');
+        if (!hasSupplier) { this.showError('CSV 缺少列：Supplier（或 Supplier Name）'); return; }
+        if (!hasFID) {
+          this.showError('检测到供应商清单（无 FID）。本页面排期需要工厂清单（含 FID）。请使用含 FID 的工厂 CSV。');
+          return;
+        }
+
+        const iSupplier = idx.has('supplier') ? idx.get('supplier') : idx.get('supplier name');
+        const iFactory = idx.has('factory') ? idx.get('factory') : -1;
+        const iOffice = idx.has('factory office') ? idx.get('factory office') : (idx.has('office') ? idx.get('office') : -1);
+        const iPriority = idx.has('priority') ? idx.get('priority') : -1;
+        const iVendorType = idx.has('vendor type') ? idx.get('vendor type') : -1;
+        const iAvailWeek = idx.has('factory available week') ? idx.get('factory available week') : -1;
+        const iAvailFrom = idx.has('factory available from (yyyy-mm-dd)') ? idx.get('factory available from (yyyy-mm-dd)') : (idx.has('available from') ? idx.get('available from') : -1);
+        const iAvailTo = idx.has('factory available to (yyyy-mm-dd)') ? idx.get('factory available to (yyyy-mm-dd)') : (idx.has('available to') ? idx.get('available to') : -1);
+        const iAssessDate = idx.has('assess date') ? idx.get('assess date') : -1;
+        const iStatus = idx.has('assess status') ? idx.get('assess status') : -1;
+        const iAssessor = idx.has('assessor name') ? idx.get('assessor name') : -1;
+        const iScore = idx.has('score') ? idx.get('score') : -1;
+
+        let added = 0, updated = 0, skipped = 0;
+        const rows = this.dataManager.getAll();
+        
+        for (let r = 1; r < raw.length; r++) {
+          const line = raw[r];
+          const fid = String(CSVParser.cell(line, idx.get('fid'))).trim();
+          if (!fid) { skipped++; continue; }
+
+          const supplier = String(CSVParser.cell(line, iSupplier)).trim();
+          const factory = String(CSVParser.cell(line, iFactory)).trim();
+          const office = String(CSVParser.cell(line, iOffice)).trim();
+          const priority = String(CSVParser.cell(line, iPriority)).trim();
+          const vendorType = String(CSVParser.cell(line, iVendorType)).trim();
+
+          let avail = '';
+          const af = String(CSVParser.cell(line, iAvailFrom)).trim();
+          const at = String(CSVParser.cell(line, iAvailTo)).trim();
+          const aw = String(CSVParser.cell(line, iAvailWeek)).trim();
+          if (af || at) { avail = Utils.formatAvailRange(af, at); }
+          else if (aw) { avail = aw; }
+
+          // 检查是否已存在完全相同的记录（Supplier + Factory + FID 都相同）
+          const existingIndex = rows.findIndex(x => {
+            const existingFid = String(this.dataManager.get(x, 'fid') || '').trim();
+            const existingSupplier = String(this.dataManager.get(x, 'supplier') || '').trim();
+            const existingFactory = String(this.dataManager.get(x, 'factory') || '').trim();
+            return existingFid === fid && 
+                   existingSupplier === supplier && 
+                   existingFactory === factory;
+          });
+          
+          if (existingIndex >= 0) {
+            // Supplier + Factory + FID 都相同，跳过不导入
+            skipped++;
+            continue;
+          } else {
+            const obj = {};
+            if (C.supplier) obj[C.supplier] = supplier;
+            if (C.factory) obj[C.factory] = factory;
+            if (C.fid) obj[C.fid] = fid;
+            if (C.office) obj[C.office] = office;
+            if (C.priority) obj[C.priority] = priority;
+            if (C.vendorType) obj[C.vendorType] = vendorType;
+            if (C.avail) obj[C.avail] = avail;
+            if (C.assessDate) obj[C.assessDate] = String(CSVParser.cell(line, iAssessDate)).trim();
+            if (C.status) obj[C.status] = String(CSVParser.cell(line, iStatus)).trim() || '空白';
+            if (C.assessor) obj[C.assessor] = String(CSVParser.cell(line, iAssessor)).trim();
+            if (C.score) obj[C.score] = String(CSVParser.cell(line, iScore)).trim();
+            rows.push(obj);
+            added++;
+          }
+        }
+
+        // 导入后按 Supplier 排序
+        this.dataManager.sortBySupplier();
+        await this.dataManager._syncToSupabase();
+        this._initFilters();
+        this.showError(`✅ 导入完成！新增 ${added} 条，跳过 ${skipped} 条（已存在）`);
+      } catch (e) { this.showError('CSV 导入失败：' + e); }
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  _downloadFile(filename, text, mime) {
+    const blob = new Blob([text], { type: mime || 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.style.display = 'block';
+    box.textContent = msg;
+    setTimeout(() => { box.style.display = 'none'; }, 5000);
+  }
+
+  _showConflictDialog() {
+    const dm = this.dataManager;
+    const { localRows, remoteRows, conflicts } = dm._pendingConflictData || {};
+    if (!conflicts || conflicts.length === 0) return;
+
+    const fieldLabels = {
+      supplier:'Supplier', factory:'Factory', fid:'FID', vendorType:'Vendor Type',
+      priority:'Priority', office:'Office', avail:'Available Week',
+      trainerDate:'Trainer Date', trainer:'Trainer',
+      assessDate:'Assess Date', status:'Status', assessor:'Assessor',
+      reportDate:'Report Date', score:'Score', remarks:'Remarks', role:'Role'
+    };
+
+    const decisions = {};
+    conflicts.forEach(c => {
+      decisions[c.key] = c.type === 'local_missing' ? 'cloud' : 'local';
+    });
+
+    const conflictList = document.getElementById('conflictList');
+    const conflictCount = document.getElementById('conflictCount');
+    conflictCount.textContent = `${conflicts.length} 条冲突`;
+
+    let html = '';
+    conflicts.forEach((c, idx) => {
+      const factory = c.factory || '未知工厂';
+      const fid = c.fid || '';
+      if (c.type === 'local_missing') {
+        html += `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-weight:600;">📌 ${factory} <span style="color:var(--muted);font-weight:400;">FID: ${fid}</span></span>
+            <span style="font-size:11px;background:#16a34a;color:#fff;padding:2px 8px;border-radius:10px;">仅云端存在</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">该记录在云端存在，但本地没有。</div>
+          <div style="margin-top:8px;display:flex;gap:12px;font-size:13px;">
+            <label><input type="radio" name="conflict_${idx}" value="cloud" checked onchange="window._conflictDecisions['${c.key}']='cloud'"> 保留云端</label>
+            <label><input type="radio" name="conflict_${idx}" value="skip" onchange="window._conflictDecisions['${c.key}']='skip'"> 跳过</label>
+          </div>
+        </div>`;
+      } else if (c.type === 'remote_missing') {
+        html += `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px;background:#fef2f2;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-weight:600;">📌 ${factory} <span style="color:var(--muted);font-weight:400;">FID: ${fid}</span></span>
+            <span style="font-size:11px;background:#dc2626;color:#fff;padding:2px 8px;border-radius:10px;">仅本地存在</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">该记录在本地存在，但云端没有。</div>
+          <div style="margin-top:8px;display:flex;gap:12px;font-size:13px;">
+            <label><input type="radio" name="conflict_${idx}" value="local" checked onchange="window._conflictDecisions['${c.key}']='local'"> 保留本地</label>
+            <label><input type="radio" name="conflict_${idx}" value="skip" onchange="window._conflictDecisions['${c.key}']='skip'"> 跳过</label>
+          </div>
+        </div>`;
+      } else {
+        let diffHtml = '';
+        c.diffs.forEach(d => {
+          const label = fieldLabels[d.field] || d.field;
+          diffHtml += `<tr><td style="padding:4px 8px;font-weight:500;white-space:nowrap;">${label}</td>
+            <td style="padding:4px 8px;color:#2563eb;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.localVal || '<span style="color:#999">(空)</span>'}</td>
+            <td style="padding:4px 8px;color:#dc2626;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.remoteVal || '<span style="color:#999">(空)</span>'}</td></tr>`;
+        });
+        html += `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-weight:600;">📌 ${factory} <span style="color:var(--muted);font-weight:400;">FID: ${fid}</span></span>
+            <span style="font-size:11px;background:#f59e0b;color:#fff;padding:2px 8px;border-radius:10px;">${c.diffs.length} 个字段不同</span>
+          </div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:8px;">
+            <thead><tr style="background:#f9fafb;"><th style="padding:4px 8px;text-align:left;border-bottom:1px solid #e5e7eb;">字段</th>
+            <th style="padding:4px 8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#2563eb;">本地</th>
+            <th style="padding:4px 8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#dc2626;">云端</th></tr></thead>
+            <tbody>${diffHtml}</tbody>
+          </table>
+          <div style="display:flex;gap:12px;font-size:13px;">
+            <label><input type="radio" name="conflict_${idx}" value="local" checked onchange="window._conflictDecisions['${c.key}']='local'"> 保留本地</label>
+            <label><input type="radio" name="conflict_${idx}" value="cloud" onchange="window._conflictDecisions['${c.key}']='cloud'"> 使用云端</label>
+            <label><input type="radio" name="conflict_${idx}" value="skip" onchange="window._conflictDecisions['${c.key}']='skip'"> 跳过</label>
+          </div>
+        </div>`;
+      }
+    });
+    conflictList.innerHTML = html;
+
+    window._conflictDecisions = decisions;
+
+    document.getElementById('conflictAllLocal').onclick = () => {
+      conflicts.forEach(c => { window._conflictDecisions[c.key] = 'local'; });
+      document.querySelectorAll('[name^="conflict_"]').forEach(el => {
+        if (el.value === 'local') el.checked = true;
+      });
+    };
+
+    document.getElementById('conflictAllCloud').onclick = () => {
+      document.querySelectorAll('[name^="conflict_"]').forEach(el => {
+        const radio = document.querySelector(`input[name="${el.name}"][value="cloud"]`);
+        if (radio) radio.checked = true;
+      });
+      conflicts.forEach(c => { window._conflictDecisions[c.key] = 'cloud'; });
+    };
+
+    document.getElementById('conflictConfirm').onclick = () => {
+      const dm = this.dataManager;
+      const { localRows, remoteRows, conflicts } = dm._pendingConflictData;
+      const decisions = window._conflictDecisions || {};
+      const merged = dm._mergeRows(localRows, remoteRows);
+      const finalMap = new Map();
+      const getKey = (row) => {
+        const fid = String(dm.get(row, 'fid') || '').trim();
+        const supplier = String(dm.get(row, 'supplier') || '').trim();
+        const factory = String(dm.get(row, 'factory') || '').trim();
+        return fid ? `${supplier}::${factory}::${fid}` : '';
+      };
+      merged.forEach(row => {
+        const key = getKey(row);
+        if (!key) { finalMap.set('_new_' + Math.random(), row); return; }
+        if (conflicts.some(c => c.key === key)) {
+          const decision = decisions[key] || 'local';
+          if (decision === 'skip') return;
+          if (decision === 'cloud') {
+            const found = remoteRows.find(r => getKey(r) === key);
+            if (found) { finalMap.set(key, { ...found }); return; }
+          }
+          finalMap.set(key, { ...row });
+        } else {
+          finalMap.set(key, { ...row });
+        }
+      });
+      dm.rows = [...finalMap.values()];
+      dm._saveToLocalStorage();
+      dm.sortBySupplier();
+      dm._updateSyncStatus('connected', `已同步 ${dm.rows.length} 条记录`);
+      document.getElementById('conflictModal').style.display = 'none';
+      window._conflictDecisions = null;
+      if (dm._pendingConflictResolve) {
+        dm._pendingConflictResolve();
+        dm._pendingConflictResolve = null;
+        dm._pendingConflictData = null;
+      }
+    };
+    document.getElementById('conflictModal').style.display = 'block';
+  }
+}
+
+// 启动应用
+window.app = new ScheduleApp();
+</script>
+
+<!-- 云端数据冲突解决弹窗 -->
+<div id="conflictModal" style="display:none;position:fixed;z-index:200;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);overflow-y:auto;">
+  <div style="max-width:900px;margin:40px auto;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:#f8fafc;">
+      <div style="font-size:18px;font-weight:700;">云端数据冲突</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">本地与云端数据不一致，请逐条选择要保留的版本</div>
+    </div>
+    <div style="padding:12px 20px;background:#fffbeb;border-bottom:1px solid #fde68a;font-size:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <span>批量操作：</span>
+      <button id="conflictAllLocal" class="btn" style="border-color:#2563eb;color:#2563eb;">全部保留本地</button>
+      <button id="conflictAllCloud" class="btn" style="border-color:#dc2626;color:#dc2626;">全部使用云端</button>
+      <span id="conflictCount" style="margin-left:auto;font-weight:600;">0 条冲突</span>
+    </div>
+    <div id="conflictList" style="max-height:480px;overflow-y:auto;padding:12px 20px;"></div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;">
+      <button id="conflictCancel" class="btn" onclick="document.getElementById('conflictModal').style.display='none'">取消合并，稍后处理</button>
+      <button id="conflictConfirm" class="btn primary" style="padding:8px 20px;">确认合并</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
