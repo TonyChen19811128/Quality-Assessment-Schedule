@@ -38,6 +38,15 @@
     .badge.yellow{background:#fffbeb;color:#92400e;border-color:#fde68a;}
     .badge.green{background:#ecfdf5;color:#065f46;border-color:#a7f3d0;}
     .badge.orange{background:#fff7ed;color:#c2410c;border-color:#fed7aa;}
+    .customer-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;cursor:default;}
+    .customer-chip .chip-remove{cursor:pointer;font-weight:bold;opacity:.5;font-size:13px;line-height:1;}
+    .customer-chip .chip-remove:hover{opacity:1;}
+    .customer-dropdown-item{padding:6px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid #f3f4f6;}
+    .customer-dropdown-item:hover{background:#eff6ff;}
+    .customer-dropdown-item.active{background:#dbeafe;}
+    .type-tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:10px;font-weight:600;}
+    .type-tag.apparel{background:#eff6ff;color:#1d4ed8;}
+    .type-tag.hometextile{background:#ecfdf5;color:#065f46;}
     .help-icon{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:#e5e7eb;color:#6b7280;font-size:12px;cursor:help;margin-left:8px;vertical-align:middle;}
     .drawer{position:fixed;top:0;right:-440px;width:440px;height:100%;background:#fff;border-left:1px solid var(--border);box-shadow:-10px 0 30px rgba(0,0,0,.08);transition:right .25s ease;z-index:60;}
     .drawer.open{right:0;}
@@ -279,10 +288,11 @@
     </div>
     <div class="row" style="margin-top:8px; flex-wrap:wrap; gap:6px; align-items:center;">
       <span style="font-size:11px;color:var(--muted);font-weight:600;">筛选：</span>
-      <select id="filterOffice" class="btn"></select>
+      <select id="filterProductType" class="btn"><option value="">全部 Product Type</option><option value="Apparel">Apparel</option><option value="Hometextile">Hometextile</option></select>
+      <div id="filterCustomerWrap" style="position:relative;display:inline-block;"><button id="filterCustomerBtn" class="btn" style="text-align:left;min-width:140px;background:#fff;color:#1f2937;">全部 Customer ▾</button><div id="filterCustomerDropdown" style="display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;max-height:240px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.1);min-width:200px;padding:4px 0;"></div></div>
       <select id="filterAssessor" class="btn"></select>
       <select id="filterStatus" class="btn"><option value="">全部状态</option><option value="空白">空白</option><option value="Planned">Planned</option><option value="Pending">Pending</option><option value="Preparing Report">Preparing Report</option><option value="Done">Done</option><option value="Inactive">Inactive</option></select>
-      <input id="search" class="search-input" placeholder="🔍 搜索 供应商 / 工厂 / FID / Assessor" />
+      <input id="search" class="search-input" placeholder="🔍 搜索 供应商 / 工厂 / FID / Assessor / Customer" />
       <button id="btnReset" class="btn">重置</button>
       <div class="row tabs">
         <button id="tabList" class="active">列表视图</button>
@@ -339,7 +349,7 @@
       <h3 style="margin-bottom:4px;">Assessment 列表（报告时间状态灯：🟢时间充裕 🟡剩3天内 🟤剩1天 🔴已超期）</h3>
       <div id="listAvailSummary" class="avail-summary" style="margin-bottom:8px;"></div>
       <div style="margin-bottom:8px;"><button id="btnExportAssessment" class="btn" title="导出当前筛选的Assessment列表">📊 导出列表</button> <button id="btnAddFactory" class="btn primary">➕ 添加工厂</button></div>
-      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell sortable" data-sort="supplier" style="width:350px;">Vendor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="factory" style="width:380px;">Factory <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="fid" style="width:80px;">FID <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell sortable" data-sort="assessDate" style="width:110px;">Assess Date <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="status" style="width:100px;">Status <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="assessor" style="width:180px;">Assessor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="reportDate" style="width:150px;">报告时间(7工作日) <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="score" style="width:70px;text-align:center;">Score <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div></div></div>
+      <div id="mainTable" class="virtual-scroll-container resizable-columns" style="margin-top:10px; max-height:620px; overflow-x:auto;"><div class="virtual-header" style="min-width:1980px;"><div class="virtual-cell" style="width:50px;text-align:center;">#</div><div class="virtual-cell sortable" data-sort="productType" style="width:100px;">Product Type <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Customer</div><div class="virtual-cell sortable" data-sort="supplier" style="width:350px;">Vendor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="factory" style="width:380px;">Factory <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="fid" style="width:80px;">FID <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:180px;">Available</div><div class="virtual-cell sortable" data-sort="assessDate" style="width:110px;">Assess Date <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="status" style="width:100px;">Status <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="assessor" style="width:180px;">Assessor <span class="sort-arrow"></span></div><div class="virtual-cell sortable" data-sort="score" style="width:70px;text-align:center;">Score <span class="sort-arrow"></span></div><div class="virtual-cell" style="width:150px;">备注</div><div class="virtual-cell" style="width:100px;">操作</div><div class="virtual-cell" style="width:60px;text-align:center;">复制</div><div class="virtual-cell" style="width:80px;text-align:center;">删除</div><div class="virtual-cell sortable" data-sort="reportDate" style="width:150px;">报告时间(7工作日) <span class="sort-arrow"></span></div></div></div>
     </div>
   </section>
 
@@ -422,6 +432,8 @@
       <div class="field"><label>Supplier</label><input id="fSupplier" type="text" placeholder="输入供应商名称" style="width:100%;" /></div>
       <div class="field"><label>Factory</label><input id="fFactory" type="text" placeholder="输入工厂名称" style="width:100%;" /></div>
       <div class="field"><label>FID</label><input id="fFid" type="text" placeholder="输入FID" style="width:100%;" /></div>
+      <div class="field"><label>Product Type</label><select id="fProductType" style="width:100%;"><option value="">（未设置）</option><option value="Apparel">Apparel</option><option value="Hometextile">Hometextile</option></select></div>
+      <div class="field"><label>Customer</label><div id="fCustomerWrap"><input id="fCustomerInput" type="text" placeholder="输入客户名，多个用逗号或回车分隔" style="width:100%;" autocomplete="off" /><div id="fCustomerChips" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;"></div></div></div>
     </div>
     <div style="margin-top:12px;">
       <div class="muted" style="margin-bottom:8px;">可评估窗口（两个日期输入，支持 2025-1-1 格式自动补全）</div>
@@ -560,7 +572,10 @@ const Config = {
     MAIN_TABLE_HEIGHT: 44
   },
   DEBOUNCE_DELAY: 200,
-  DEFAULT_COLUMN_WIDTHS: [50, 350, 380, 80, 180, 110, 100, 180, 150, 70, 150, 100, 60, 80]
+  DEFAULT_COLUMN_WIDTHS: [50, 100, 180, 350, 380, 80, 180, 110, 100, 180, 70, 150, 100, 60, 80, 150],
+  PRODUCT_TYPE_OPTIONS: ['', 'Apparel', 'Hometextile'],
+  CUSTOMER_LIST_KEY: 'assessor_schedule_customer_list',
+  CUSTOMER_LIST: ['H&M', 'ZARA', 'UNIQLO', 'GAP', 'IKEA', 'MANGO', 'TARGET', 'WALMART', 'NIKE', 'ADIDAS', 'PVH', 'INDITEX']
 };
 
 const C = {"supplier": "Supplier", "factory": "Factory", "fid": "FID", "vendorType": "Vendor Type", "priority": "Priority", "office": "Factory Office", "avail": "Factory Available Week", "trainerDate": "Trainer Available Date", "trainer": "Trainer Name", "assessDate": "Assess Date", "status": "Assess Status", "assessor": "Assessor Name", "reportDate": "Report Date", "score": "Score", "remarks": "Remarks", "role": "Training Role for candidates \nobserver/member/ evaluatee"};
@@ -1408,6 +1423,8 @@ class SupabaseDataManager {
     if (key === 'assessor') candidates.push('Accessor Name');
     if (key === 'role') candidates.push('Training Role for candidates', 'Training Role');
     for (const k of candidates) { if (k && (k in row)) return row[k] ?? ''; }
+    // fallback: direct property for custom fields (productType, customers, etc.)
+    if (key in row) return row[key] ?? '';
     return '';
   }
 
@@ -1417,7 +1434,9 @@ class SupabaseDataManager {
     if (key === 'assessDate' && ('Access Date' in row)) { row['Access Date'] = value; return; }
     if (key === 'status' && ('Access Status' in row)) { row['Access Status'] = value; return; }
     if (key === 'assessor' && ('Accessor Name' in row)) { row['Accessor Name'] = value; return; }
-    if (k) row[k] = value;
+    if (k) { row[k] = value; return; }
+    // fallback: direct property for custom fields
+    row[key] = value;
   }
 
   getAll() { 
@@ -2612,7 +2631,7 @@ class ScheduleApp {
     this.workloadCalc = new WorkloadCalculator(this.dataManager);
     this.calendar = new CalendarView(this.dataManager);
     this.backupManager = new BackupManager(this.dataManager);
-    this.state = { office: '', assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null, sortField: '', sortDir: 'asc' };
+    this.state = { productType: '', customer: new Set(), assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null, sortField: '', sortDir: 'asc' };
     this.virtualScrollers = {};
     this.init();
   }
@@ -2624,6 +2643,8 @@ class ScheduleApp {
     this._initVirtualScrollers();
     this._bindEvents();
     this._initFilters();
+    this._initCustomerInput();
+    this._initFilterCustomer();
     this._loadPendingColumnWidths();
     this._loadAssessorColumnWidths();
     this.dataManager.subscribe(() => this.renderAll());
@@ -2689,31 +2710,28 @@ class ScheduleApp {
         const allData = this.dataManager.getAll();
         const originalIndex = allData.indexOf(row) + 1;
         const rowIndex = allData.indexOf(row);
-        return `<div class="virtual-cell" data-col="0" style="width:${widths[0]}px;text-align:center;${zebra}">${originalIndex}</div><div class="virtual-cell" data-col="1" style="width:${widths[1]}px;${zebra}">${hl(this.dataManager.get(row, 'supplier'))}</div><div class="virtual-cell" data-col="2" style="width:${widths[2]}px;${zebra}">${hl(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" data-col="3" style="width:${widths[3]}px;${zebra}">${hl(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" data-col="4" style="width:${widths[4]}px;${zebra}">${hl(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" data-col="5" style="width:${widths[5]}px;${zebra}">${hl(this.dataManager.get(row, 'assessDate'))}</div><div class="virtual-cell" data-col="6" style="width:${widths[6]}px;${zebra}">${this._statusBadge(st)}</div><div class="virtual-cell" data-col="7" style="width:${widths[7]}px;${zebra}">${hl(this.dataManager.get(row, 'assessor'))}</div><div class="virtual-cell" data-col="8" style="width:${widths[8]}px;${zebra}">${reportInfo.date}${reportInfo.light}</div><div class="virtual-cell" data-col="9" style="width:${widths[9]}px;text-align:center;${zebra}">${hl(this.dataManager.get(row, 'score'))}</div><div class="virtual-cell" data-col="10" style="width:${widths[10]}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${zebra}" title="${Utils.esc(remarks)}">${hl(remarks)}</div><div class="virtual-cell" data-col="11" style="width:${widths[11]}px;${zebra}"><button class="btn" onclick="window.app.openDrawer(${rowIndex})">安排/编辑</button></div><div class="virtual-cell" data-col="12" style="width:${widths[12]}px;text-align:center;${zebra}"><button class="btn" style="background:#2563eb;color:#fff;font-size:11px;padding:2px 6px;" onclick="window.app.duplicateRow(${rowIndex})">复制</button></div><div class="virtual-cell" data-col="13" style="width:${widths[13]}px;text-align:center;${zebra}"><button class="btn" style="background:#dc2626;color:#fff;" onclick="window.app.deleteRow(${rowIndex})">删除</button></div>`;
+        return `<div class="virtual-cell" data-col="0" style="width:${widths[0]}px;text-align:center;${zebra}">${originalIndex}</div><div class="virtual-cell" data-col="1" style="width:${widths[1]}px;${zebra}">${this._renderProductType(this.dataManager.get(row, 'productType'))}</div><div class="virtual-cell" data-col="2" style="width:${widths[2]}px;${zebra}">${this._renderCustomerTags(this.dataManager.get(row, 'customers'))}</div><div class="virtual-cell" data-col="3" style="width:${widths[3]}px;${zebra}">${hl(this.dataManager.get(row, 'supplier'))}</div><div class="virtual-cell" data-col="4" style="width:${widths[4]}px;${zebra}">${hl(this.dataManager.get(row, 'factory'))}</div><div class="virtual-cell" data-col="5" style="width:${widths[5]}px;${zebra}">${hl(this.dataManager.get(row, 'fid'))}</div><div class="virtual-cell" data-col="6" style="width:${widths[6]}px;${zebra}">${hl(this.dataManager.get(row, 'avail'))}</div><div class="virtual-cell" data-col="7" style="width:${widths[7]}px;${zebra}">${hl(this.dataManager.get(row, 'assessDate'))}</div><div class="virtual-cell" data-col="8" style="width:${widths[8]}px;${zebra}">${this._statusBadge(st)}</div><div class="virtual-cell" data-col="9" style="width:${widths[9]}px;${zebra}">${hl(this.dataManager.get(row, 'assessor'))}</div><div class="virtual-cell" data-col="10" style="width:${widths[10]}px;text-align:center;${zebra}">${hl(this.dataManager.get(row, 'score'))}</div><div class="virtual-cell" data-col="11" style="width:${widths[11]}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${zebra}" title="${Utils.esc(remarks)}">${hl(remarks)}</div><div class="virtual-cell" data-col="12" style="width:${widths[12]}px;${zebra}"><button class="btn" onclick="window.app.openDrawer(${rowIndex})">安排/编辑</button></div><div class="virtual-cell" data-col="13" style="width:${widths[13]}px;text-align:center;${zebra}"><button class="btn" style="background:#2563eb;color:#fff;font-size:11px;padding:2px 6px;" onclick="window.app.duplicateRow(${rowIndex})">复制</button></div><div class="virtual-cell" data-col="14" style="width:${widths[14]}px;text-align:center;${zebra}"><button class="btn" style="background:#dc2626;color:#fff;" onclick="window.app.deleteRow(${rowIndex})">删除</button></div><div class="virtual-cell" data-col="15" style="width:${widths[15]}px;${zebra}">${reportInfo.date}${reportInfo.light}</div>`;
       }
     });
   }
 
   _initFilters() {
-    const offices = Utils.uniq(this.dataManager.getAll().map(r => this.dataManager.get(r, 'office'))).sort();
-    document.getElementById('filterOffice').innerHTML = `<option value="">全部 Office</option>` + offices.map(o => `<option value="${Utils.esc(o)}">${Utils.esc(o)}</option>`).join('');
-    document.getElementById('filterOffice').value = this.state.office;
+    document.getElementById('filterProductType').value = this.state.productType;
     
-    // 使用 getAllAssessors 获取所有 Assessor（包括自定义的）
     const assessors = this.dataManager.getAllAssessors();
     document.getElementById('filterAssessor').innerHTML = `<option value="">全部 Assessor</option>` + assessors.map(a => `<option value="${Utils.esc(a)}">${Utils.esc(a)}</option>`).join('');
     document.getElementById('filterAssessor').value = this.state.assessor;
   }
 
   _bindEvents() {
-    document.getElementById('filterOffice').addEventListener('change', e => { this.state.office = e.target.value; this._initFilters(); this.renderAll(); });
+    document.getElementById('filterProductType').addEventListener('change', e => { this.state.productType = e.target.value; this.renderAll(); });
     document.getElementById('filterAssessor').addEventListener('change', e => { this.state.assessor = e.target.value; this.renderAll(); });
     document.getElementById('filterStatus').addEventListener('change', e => { this.state.status = e.target.value; this.renderAll(); });
     
     const debouncedSearch = Utils.debounce((value) => { this.state.q = value; this.renderAll(); }, Config.DEBOUNCE_DELAY);
     document.getElementById('search').addEventListener('input', e => debouncedSearch(e.target.value));
     
-    document.getElementById('btnReset').addEventListener('click', () => { this.state = { office: '', assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null, sortField: '', sortDir: 'asc' }; document.getElementById('search').value = ''; this._initFilters(); this._updateSortArrows(); this.renderAll(); });
+    document.getElementById('btnReset').addEventListener('click', () => { this.state = { productType: '', customer: new Set(), assessor: '', status: '', q: '', availDate: '', selectedRowIndex: null, editingAssessor: null, _availIndices: null, sortField: '', sortDir: 'asc' }; document.getElementById('search').value = ''; this._initFilters(); this._initFilterCustomer(); this._updateSortArrows(); this.renderAll(); });
     document.getElementById('tabList').addEventListener('click', () => this._switchTab('list'));
     document.getElementById('tabCal').addEventListener('click', () => this._switchTab('calendar'));
     document.getElementById('prevMonth').addEventListener('click', () => this.calendar.prevMonth());
@@ -3398,7 +3416,14 @@ class ScheduleApp {
     const allRows = this.dataManager.getAll();
     return allRows.filter((r, idx) => {
       if (this.state._availIndices && this.state._availIndices.size > 0 && !this.state._availIndices.has(idx)) return false;
-      if (this.state.office && this.dataManager.get(r, 'office') !== this.state.office) return false;
+      if (this.state.productType && this.dataManager.get(r, 'productType') !== this.state.productType) return false;
+      if (this.state.customer.size > 0) {
+        const raw = this.dataManager.get(r, 'customers');
+        const rowCustomers = Array.isArray(raw) ? raw : (raw ? String(raw).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : []);
+        const hay = rowCustomers.join(' ').toLowerCase();
+        const hit = [...this.state.customer].some(c => hay.includes(String(c).toLowerCase()));
+        if (!hit) return false;
+      }
       if (this.state.assessor && this.dataManager.get(r, 'assessor') !== this.state.assessor) return false;
       if (this.state.status && this.dataManager.get(r, 'status') !== this.state.status) return false;
       if (this.state.availDate) {
@@ -3406,7 +3431,7 @@ class ScheduleApp {
         if (!date || !this._isRowAvailableOnDate(r, date)) return false;
       }
       if (q) {
-        const hay = [this.dataManager.get(r, 'supplier'), this.dataManager.get(r, 'factory'), this.dataManager.get(r, 'fid'), this.dataManager.get(r, 'assessor')].join(' ').toLowerCase();
+        const hay = [this.dataManager.get(r, 'supplier'), this.dataManager.get(r, 'factory'), this.dataManager.get(r, 'fid'), this.dataManager.get(r, 'assessor'), this.dataManager.get(r, 'productType'), (this.dataManager.get(r, 'customers') || []).join(' ')].join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -3432,7 +3457,11 @@ class ScheduleApp {
     const container = document.getElementById('filterChips');
     if (!container) return;
     let html = '';
-    if (this.state.office) html += `<span class="filter-chip">Office: ${Utils.esc(this.state.office)} <span class="chip-close" onclick="window.app._clearFilter('office')">×</span></span>`;
+    if (this.state.productType) html += `<span class="filter-chip">Product Type: ${Utils.esc(this.state.productType)} <span class="chip-close" onclick="window.app._clearFilter('productType')">×</span></span>`;
+    if (this.state.customer.size > 0) {
+      const names = [...this.state.customer].map(c => Utils.esc(c)).join(', ');
+      html += `<span class="filter-chip">Customer: ${names} <span class="chip-close" onclick="window.app._clearFilter('customer')">×</span></span>`;
+    }
     if (this.state.assessor) html += `<span class="filter-chip">Assessor: ${Utils.esc(this.state.assessor)} <span class="chip-close" onclick="window.app._clearFilter('assessor')">×</span></span>`;
     if (this.state.status) html += `<span class="filter-chip">Status: ${Utils.esc(this.state.status)} <span class="chip-close" onclick="window.app._clearFilter('status')">×</span></span>`;
     if (this.state.q) html += `<span class="filter-chip">搜索: "${Utils.esc(this.state.q)}" <span class="chip-close" onclick="window.app._clearFilter('search')">×</span></span>`;
@@ -3440,7 +3469,8 @@ class ScheduleApp {
   }
 
   _clearFilter(type) {
-    if (type === 'office') { this.state.office = ''; document.getElementById('filterOffice').value = ''; }
+    if (type === 'productType') { this.state.productType = ''; document.getElementById('filterProductType').value = ''; }
+    if (type === 'customer') { this.state.customer = new Set(); this._initFilterCustomer(); }
     if (type === 'assessor') { this.state.assessor = ''; document.getElementById('filterAssessor').value = ''; }
     if (type === 'status') { this.state.status = ''; document.getElementById('filterStatus').value = ''; }
     if (type === 'search') { this.state.q = ''; document.getElementById('search').value = ''; }
@@ -3566,7 +3596,7 @@ class ScheduleApp {
   _renderPendingTable() {
     const q = this.state.q.toLowerCase();
     const baseForStats = this.dataManager.getAll().filter(r => {
-      if (this.state.office && this.dataManager.get(r, 'office') !== this.state.office) return false;
+      if (this.state.productType && this.dataManager.get(r, 'productType') !== this.state.productType) return false;
       if (q) {
         const hay = [this.dataManager.get(r, 'supplier'), this.dataManager.get(r, 'factory'), this.dataManager.get(r, 'fid'), this.dataManager.get(r, 'assessor')].join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
@@ -3814,6 +3844,8 @@ class ScheduleApp {
       document.getElementById('fReportDate').value = '';
       document.getElementById('fScore').value = '';
       document.getElementById('fRemarks').value = '';
+      document.getElementById('fProductType').value = '';
+      this._renderCustomerChips([]);
     } else {
       if (!r) return;
       document.getElementById('dTitle').textContent = this.dataManager.get(r, 'factory') || 'Factory';
@@ -3830,6 +3862,8 @@ class ScheduleApp {
       document.getElementById('fReportDate').value = String(this.dataManager.get(r, 'reportDate') || '').trim();
       document.getElementById('fScore').value = String(this.dataManager.get(r, 'score') || '').trim();
       document.getElementById('fRemarks').value = String(this.dataManager.get(r, 'remarks') || '').trim();
+      document.getElementById('fProductType').value = String(this.dataManager.get(r, 'productType') || '').trim();
+      this._renderCustomerChips(this.dataManager.get(r, 'customers') || []);
     }
 
     const allAssessors = this.dataManager.getAllAssessors().filter(a => a && a.toLowerCase() !== 'tbd');
@@ -3888,6 +3922,156 @@ class ScheduleApp {
     document.getElementById('dRisk').innerHTML = msgs.length ? msgs.map(m => `<div>${m}</div>`).join('') : '<span class="badge green">暂无冲突</span>';
   }
 
+  _getCustomerList() {
+    try {
+      const saved = localStorage.getItem(Config.CUSTOMER_LIST_KEY);
+      return saved ? JSON.parse(saved) : [...Config.CUSTOMER_LIST];
+    } catch (e) { return [...Config.CUSTOMER_LIST]; }
+  }
+
+  _saveCustomerList(list) {
+    localStorage.setItem(Config.CUSTOMER_LIST_KEY, JSON.stringify(list));
+  }
+
+  _renderCustomerChips(customers) {
+    const container = document.getElementById('fCustomerChips');
+    if (!container) return;
+    container.innerHTML = customers.map(c => `<span class="customer-chip">${Utils.esc(c)}<span class="chip-remove" onclick="window.app._removeCustomerChip('${Utils.esc(c)}')">&times;</span></span>`).join('');
+  }
+
+  _getCustomerChips() {
+    const container = document.getElementById('fCustomerChips');
+    if (!container) return [];
+    return [...container.querySelectorAll('.customer-chip')].map(el => el.textContent.replace('×', '').trim());
+  }
+
+  _removeCustomerChip(name) {
+    const current = this._getCustomerChips().filter(c => c !== name);
+    this._renderCustomerChips(current);
+  }
+
+  _initFilterCustomer() {
+    const btn = document.getElementById('filterCustomerBtn');
+    const dropdown = document.getElementById('filterCustomerDropdown');
+    if (!btn || !dropdown) return;
+
+    const getAllCustomers = () => {
+      const set = new Set();
+      this.dataManager.getAll().forEach(r => {
+        const raw = this.dataManager.get(r, 'customers');
+        const list = Array.isArray(raw) ? raw : (raw ? String(raw).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean) : []);
+        list.forEach(c => set.add(String(c).trim()));
+      });
+      // Exclude empty strings
+      set.delete('');
+      return [...set].sort((a, b) => a.localeCompare(b, 'en'));
+    };
+
+    const updateLabel = () => {
+      if (this.state.customer.size === 0) {
+        btn.textContent = '全部 Customer ▾';
+      } else {
+        btn.textContent = `${this.state.customer.size} Customer(s) ▾`;
+      }
+    };
+
+    const renderDropdown = () => {
+      const all = getAllCustomers();
+      if (all.length === 0) {
+        dropdown.innerHTML = `<div style="padding:8px 12px;color:var(--muted);font-size:12px;">暂无 Customer 数据</div>`;
+        return;
+      }
+      dropdown.innerHTML = all.map(c => {
+        const checked = this.state.customer.has(c) ? ' checked' : '';
+        return `<label style="display:flex;align-items:center;gap:6px;padding:4px 12px;cursor:pointer;font-size:12px;white-space:nowrap;" onmousedown="event.preventDefault();"><input type="checkbox" value="${Utils.esc(c)}"${checked} style="margin:0;" /> ${Utils.esc(c)}</label>`;
+      }).join('');
+      dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) {
+            this.state.customer = new Set([...this.state.customer, cb.value]);
+          } else {
+            const next = new Set(this.state.customer);
+            next.delete(cb.value);
+            this.state.customer = next;
+          }
+          updateLabel();
+          this.renderAll();
+        });
+      });
+    };
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdown.style.display === 'block';
+      dropdown.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) renderDropdown();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+
+    // Refresh options after data updates
+    this._refreshFilterCustomer = () => {
+      if (dropdown.style.display === 'block') renderDropdown();
+    };
+
+    updateLabel();
+  }
+
+  _initCustomerInput() {
+    const input = document.getElementById('fCustomerInput');
+    const dropdown = document.getElementById('fCustomerDropdown');
+    if (!input) return;
+
+    const commitInput = () => {
+      const raw = input.value;
+      // Split by comma / semicolon / newline; Enter is handled in keydown
+      const parts = raw.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+      if (parts.length === 0) return;
+      const current = this._getCustomerChips();
+      const list = this._getCustomerList();
+      const newChips = [];
+      const newToList = [];
+      parts.forEach(name => {
+        if (!current.includes(name) && !newChips.includes(name)) newChips.push(name);
+        if (!list.includes(name) && !newToList.includes(name)) newToList.push(name);
+      });
+      if (newChips.length) this._renderCustomerChips([...current, ...newChips]);
+      if (newToList.length) this._saveCustomerList([...list, ...newToList]);
+      input.value = '';
+      if (dropdown) dropdown.style.display = 'none';
+    };
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',' || e.key === ';') {
+        e.preventDefault();
+        commitInput();
+      } else if (e.key === 'Backspace' && !input.value) {
+        const current = this._getCustomerChips();
+        if (current.length) this._renderCustomerChips(current.slice(0, -1));
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) commitInput();
+    });
+  }
+
+  _renderProductType(pt) {
+    const type = String(pt || '').trim();
+    if (!type) return '<span style="color:var(--muted);font-size:11px;">-</span>';
+    const cls = type.toLowerCase();
+    return `<span class="type-tag ${cls}">${Utils.esc(type)}</span>`;
+  }
+
+  _renderCustomerTags(customers) {
+    if (!customers || !Array.isArray(customers) || customers.length === 0) return '<span style="color:var(--muted);font-size:11px;">-</span>';
+    return customers.map(c => `<span class="customer-chip" style="padding:1px 6px;font-size:10px;margin:1px;">${Utils.esc(c)}</span>`).join('');
+  }
+
   async saveDrawer() {
     const idx = this.state.selectedRowIndex;
     const isNew = (idx === null || idx === undefined || idx < 0);
@@ -3903,7 +4087,9 @@ class ScheduleApp {
       status: document.getElementById('fStatus').value,
       reportDate: document.getElementById('fReportDate').value,
       score: document.getElementById('fScore').value,
-      remarks: document.getElementById('fRemarks').value
+      remarks: document.getElementById('fRemarks').value,
+      productType: document.getElementById('fProductType').value,
+      customers: this._getCustomerChips()
     };
 
     if (isNew) {
@@ -3943,7 +4129,7 @@ class ScheduleApp {
     const r = this.dataManager.getAll()[idx];
     if (!r) return;
     const newRow = {};
-    const fields = ['supplier', 'factory', 'fid', 'avail', 'office', 'assessor', 'assessDate', 'status', 'reportDate', 'score', 'remarks'];
+    const fields = ['supplier', 'factory', 'fid', 'productType', 'customers', 'avail', 'office', 'assessor', 'assessDate', 'status', 'reportDate', 'score', 'remarks'];
     fields.forEach(f => this.dataManager.set(newRow, f, this.dataManager.get(r, f)));
     this.dataManager.set(newRow, 'status', '空白');
     this.dataManager.set(newRow, 'assessor', '');
@@ -4082,7 +4268,7 @@ class ScheduleApp {
     }
 
     // 构建数据
-    const headers = ['编号', 'Vendor', 'Factory', 'FID', 'Available', 'Assess Date', 'Status', 'Assessor', '报告时间(7工作日)', 'Score', '备注'];
+    const headers = ['编号', 'Product Type', 'Customer', 'Vendor', 'Factory', 'FID', 'Available', 'Assess Date', 'Status', 'Assessor', 'Score', '备注', '报告时间(7工作日)'];
     const data = [];
     
     rows.forEach((row, idx) => {
@@ -4092,6 +4278,8 @@ class ScheduleApp {
 
       data.push({
         '编号': idx + 1,
+        'Product Type': this.dataManager.get(row, 'productType') || '',
+        'Customer': (this.dataManager.get(row, 'customers') || []).join(', '),
         'Vendor': this.dataManager.get(row, 'supplier') || '',
         'Factory': this.dataManager.get(row, 'factory') || '',
         'FID': this.dataManager.get(row, 'fid') || '',
@@ -4099,9 +4287,9 @@ class ScheduleApp {
         'Assess Date': this.dataManager.get(row, 'assessDate') || '',
         'Status': this.dataManager.get(row, 'status') || '',
         'Assessor': this.dataManager.get(row, 'assessor') || '',
-        '报告时间(7工作日)': reportInfo.date || '',
         'Score': this.dataManager.get(row, 'score') || '',
-        '备注': this.dataManager.get(row, 'remarks') || ''
+        '备注': this.dataManager.get(row, 'remarks') || '',
+        '报告时间(7工作日)': reportInfo.date || ''
       });
     });
 
@@ -4112,6 +4300,8 @@ class ScheduleApp {
     // 设置列宽
     const colWidths = [
       { wch: 6 },   // 编号
+      { wch: 12 },  // Product Type
+      { wch: 20 },  // Customer
       { wch: 35 },  // Vendor
       { wch: 40 },  // Factory
       { wch: 10 },  // FID
@@ -4119,9 +4309,9 @@ class ScheduleApp {
       { wch: 12 },  // Assess Date
       { wch: 12 },  // Status
       { wch: 20 },  // Assessor
-      { wch: 18 },  // 报告时间(7工作日)
       { wch: 8 },   // Score
-      { wch: 25 }   // 备注
+      { wch: 25 },  // 备注
+      { wch: 18 }   // 报告时间(7工作日)
     ];
     ws['!cols'] = colWidths;
 
